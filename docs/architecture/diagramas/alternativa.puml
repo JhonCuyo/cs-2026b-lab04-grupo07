@@ -1,0 +1,51 @@
+@startuml
+skinparam dpi 220
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam backgroundColor white
+
+title Alternativa C (Descartada): San Camilo en Línea con Microservicios
+
+actor "Cliente / Comerciante / Repartidor" as U
+node "API Gateway" as GW
+
+package "Microservicios Independientes" {
+    [Catálogo] as C
+    [Pedidos] as P
+    [Pagos] as PA
+    [Notificaciones] as N
+    [Envíos] as E
+}
+
+queue "Broker de Eventos\n(RabbitMQ)" as MQ
+database "BD Catálogo" as DB1
+database "BD Pedidos" as DB2
+database "BD Pagos" as DB3
+cloud "Pasarela Yape API" as Y
+cloud "WhatsApp Business API" as W
+
+U --> GW
+GW --> C
+GW --> P
+GW --> PA
+GW --> N
+GW --> E
+
+C --> DB1
+P --> DB2
+PA --> DB3
+
+P ..> MQ : PedidoCreado
+MQ ..> PA
+MQ ..> N
+PA --> Y
+N --> W
+
+note bottom of MQ
+  Descartada (Puntaje en Matriz: 2.60):
+  Ofrece alta escalabilidad independiente, pero requiere desplegar +5 microservicios,
+  3 bases de datos, un broker de mensajería y monitoreo distribuido.
+  Su alta complejidad operativa y costo de infraestructura exceden la restricción de 1 mes
+  de plazo (R-01) y la capacidad de un equipo de 3 desarrolladores (R-02) con un solo VPS (R-03).
+end note
+@enduml
