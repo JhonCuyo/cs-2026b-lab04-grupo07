@@ -14,6 +14,31 @@ Plataforma web y móvil diseñada para canalizar los pedidos a los puestos del M
 
 * **Atributo de Calidad Crítico:** Usabilidad / Capacidad de interacción (QA-01). Un comerciante con poca experiencia digital debe poder publicar un producto en su catálogo en $\le 3$ toques desde un smartphone de gama baja en red 3G.
 
+## Estructura del proyecto
+```
+cs-2026b-lab04-grupo07/
+├── README.md                          # (Informe principal con el Mermaid embebido)
+├── docs/
+│   ├── cuestionario.md                # (Respuestas a la Sección IV)
+│   └── architecture/
+│       ├── drivers.md                 # (E1: Requisitos, Atributos y Escenarios)
+│       ├── matriz-decision.md         # (E2: Matriz ponderada de 3 estilos)
+│       ├── bitacora-ia.md             # (E7: Prompts y verificaciones)
+│       ├── adr/
+│       │   ├── 000-plantilla.md
+│       │   ├── 001-estilo-arquitectonico.md
+│       │   ├── 002-base-de-datos.md
+│       │   └── 003-pwa-vs-nativa.md
+│       └── diagramas/
+│           ├── arquitectura.mmd       # (E3: Mermaid)
+│           ├── alternativa.puml       # (E5: PlantUML descartada)
+│           └── despliegue.py          # (E6: Python Diagrams)
+└── img/                               # (Imágenes PNG generadas)
+    ├── arquitectura.png
+    ├── alternativa.png
+    └── despliegue.png
+```
+
 ## Arquitectura Elegida (Monolito Modular)
 
 ```mermaid
