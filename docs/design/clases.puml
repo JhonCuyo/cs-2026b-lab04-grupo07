@@ -1,0 +1,133 @@
+@startuml clases-sancamilo
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam class BackgroundColor #EEF2F8
+skinparam classBorderColor #1A3A5C
+
+title San Camilo en Línea - Módulos Pedidos y Pagos (Diseño E1)
+
+class Comprador {
+  - id: UUID
+  - nombre: String
+  - celular: String
+  - direccion: String
+}
+
+class Puesto {
+  - id: UUID
+  - numeroPuesto: String
+  - nombreComerciante: String
+  - celular: String
+}
+
+class Producto {
+  - id: UUID
+  - nombre: String
+  - precioUnitario: Decimal
+  - stockDisponible: int
+  + reservar(cantidad: int): void
+  + liberar(cantidad: int): void
+}
+
+class PedidoMultipuesto {
+  - id: UUID
+  - fecha: DateTime
+  - total: Decimal
+  - estado: EstadoPedido
+  + agregarLinea(producto: Producto, cantidad: int): void
+  + calcularTotal(): Decimal
+  + confirmar(): void
+  + registrarPago(pago: Pago): void
+  + cancelar(motivo: String): void
+}
+
+class LineaPedido {
+  - cantidad: int
+  - precioUnitario: Decimal
+  + subtotal(): Decimal
+}
+
+class PedidoPuesto {
+  - id: UUID
+  - estadoPuesto: EstadoPedidoPuesto
+  + marcarListo(): void
+}
+
+class Pago {
+  - id: UUID
+  - monto: Decimal
+  - medio: MedioPago
+  - codigoOperacion: String
+  - aprobado: bool
+}
+
+enum EstadoPedido {
+  BORRADOR
+  CONFIRMADO
+  PAGO_PENDIENTE
+  PAGADO
+  EN_PREPARACION
+  ENTREGADO
+  CANCELADO
+}
+
+enum EstadoPedidoPuesto {
+  RECIBIDO
+  LISTO
+  RECOGIDO
+}
+
+enum MedioPago {
+  YAPE
+  PLIN
+}
+
+interface PasarelaPago <<puerto>> {
+  + cobrar(monto: Decimal, celular: String): Pago
+}
+
+class YapeAdapter <<adaptador>> {
+  + cobrar(monto: Decimal, celular: String): Pago
+}
+
+class PlinAdapter <<adaptador>> {
+  + cobrar(monto: Decimal, celular: String): Pago
+}
+
+class ServicioPedidos <<servicio>> {
+  + confirmarYPagar(pedidoId: UUID, medio: MedioPago): PedidoMultipuesto
+}
+
+interface RepositorioPedidos <<puerto>> {
+  + buscar(id: UUID): PedidoMultipuesto
+  + guardar(p: PedidoMultipuesto): void
+}
+
+interface Notificador <<puerto>> {
+  + notificarNuevoPedido(p: PedidoMultipuesto): void
+}
+
+' Relaciones y multiplicidades
+Comprador "1" -- "0..*" PedidoMultipuesto : realiza >
+PedidoMultipuesto "1" *-- "1..*" LineaPedido
+LineaPedido "0..*" --> "1" Producto
+Puesto "1" -- "0..*" Producto : ofrece >
+
+PedidoMultipuesto "1" *-- "1..*" PedidoPuesto
+PedidoPuesto "0..*" --> "1" Puesto
+
+PedidoMultipuesto "1" o-- "0..1" Pago
+PedidoMultipuesto --> EstadoPedido
+PedidoPuesto --> EstadoPedidoPuesto
+Pago --> MedioPago
+
+PasarelaPago <|.. YapeAdapter : realiza
+PasarelaPago <|.. PlinAdapter : realiza
+
+ServicioPedidos ..> PedidoMultipuesto
+ServicioPedidos ..> RepositorioPedidos
+ServicioPedidos ..> PasarelaPago
+ServicioPedidos ..> Notificador
+
+@enduml
