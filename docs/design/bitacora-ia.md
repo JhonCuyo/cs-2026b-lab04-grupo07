@@ -55,3 +55,17 @@
 * **Verificación y Decisión del Equipo:**
   1. **Corregido:** Se cambió la notificación a un mensaje asíncrono (`->>`) para que el envío de WhatsApp a múltiples puestos no demore la respuesta HTTP al usuario.
   2. **Corregido (Regla C1):** Se eliminó `enviarSMS()` ya que la notificación la gestiona el puerto `Notificador` y no la clase `Comprador`.
+
+  ## Interacción 3 - Generación del Diagrama de Máquina de Estados (E3)
+* **Fecha:** 2026-10-11
+* **Herramienta:** IA Generativa (ChatGPT / Claude / Gemini)
+* **Prompt utilizado:**
+  > "Genera un diagrama de máquina de estados en Mermaid (stateDiagram-v2) para la entidad PedidoPuesto de 'San Camilo en Línea'. Incluye los estados: RECIBIDO, LISTO, RECOGIDO, ENTREGADO, RECHAZADO y CANCELADO. Agrega guardas entre corchetes y nombra las transiciones con operaciones de la clase."
+
+* **Propuesta de la IA:**
+  1. Utilizó el estado `EN_PREPARACION` sin asociarle una operación de transición clara.
+  2. Omitió las guardas de validación de stock y llegada del repartidor.
+
+* **Verificación y Decisión del Equipo:**
+  1. **Corregido (Regla C2):** Se simplificó la transición a `marcarListo()` para coincidir exactamente con el método de la clase `PedidoPuesto`.
+  2. **Corregido:** Se agregaron las guardas `[comerciante termina preparacion]` y `[repartidor llega al puesto]` para cumplir los criterios de aceptación y los estados sugeridos de la guía.
