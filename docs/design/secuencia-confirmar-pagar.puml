@@ -1,0 +1,55 @@
+@startuml secuencia-confirmar-pagar
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+autonumber
+
+actor Comprador
+participant "PWA San Camilo" as UI
+participant "PedidoController" as C
+participant "ServicioPedidos" as S
+participant "RepositorioPedidos" as R
+participant "PedidoMultipuesto" as P
+participant "PasarelaPago\n(YapeAdapter)" as G
+participant "Notificador" as N
+
+Comprador -> UI : Confirmar pedido multipuesto y pagar con Yape
+UI -> C : POST /pedidos/{id}/pago
+C -> S : confirmarYPagar(id, YAPE)
+S -> R : buscar(id)
+R --> S : pedido
+S -> P : confirmar()
+
+loop por cada linea del pedido
+    P -> P : producto.reservar(cantidad)
+end
+
+S -> P : calcularTotal()
+P --> S : total
+
+S -> G : cobrar(total, celular)
+
+alt pago aprobado
+    G --> S : pago (aprobado = true)
+    S -> P : registrarPago(pago)
+    S -> R : guardar(pedido)
+    S ->> N : notificarNuevoPedido(pedido)
+    note right of N
+      asincrono
+      (envia WhatsApp a cada
+      comerciante sin bloquear)
+    end note
+    S --> C : pedido PAGADO
+    C --> UI : 200 OK (Pedido confirmado)
+    UI --> Comprador : Muestra confirmacion y resumen por puesto
+
+else pago rechazado o sin respuesta (timeout 15 min)
+    G --> S : pago (aprobado = false)
+    S -> P : cancelar("Pago rechazado")
+    S -> R : guardar(pedido)
+    S --> C : pedido CANCELADO
+    C --> UI : 402 Pago rechazado
+    UI --> Comprador : Muestra error y libera carrito
+end
+
+@enduml
