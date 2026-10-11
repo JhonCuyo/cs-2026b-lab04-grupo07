@@ -69,3 +69,16 @@
 * **Verificación y Decisión del Equipo:**
   1. **Corregido (Regla C2):** Se simplificó la transición a `marcarListo()` para coincidir exactamente con el método de la clase `PedidoPuesto`.
   2. **Corregido:** Se agregaron las guardas `[comerciante termina preparacion]` y `[repartidor llega al puesto]` para cumplir los criterios de aceptación y los estados sugeridos de la guía.
+
+## Interacción 4 - Generación del Diagrama de Actividades (E4)
+* **Fecha:** 2026-10-11
+* **Herramienta:** IA Generativa (ChatGPT / Claude / Gemini)
+* **Prompt utilizado:**
+  > "Genera un diagrama de actividades en PlantUML para la 'preparación y consolidación de un pedido multipuesto' en San Camilo en Línea. Incluye 3 particiones (Comprador, Sistema/Repartidor, Comerciante), decisiones de stock y pago, bifurcación paralela (fork/join) y la entrega final."
+
+* **Propuesta de la IA:**
+  1. No incluyó la etapa de acopio/consolidación de los paquetes de los diferentes puestos antes del despacho.
+  2. Colocó al comerciante entregando directamente al comprador de forma individual.
+
+* **Verificación y Decisión del Equipo:**
+  1. **Corregido (Feedback de usuario):** Se ajustó el diagrama agregando la partición de acopio y consolidación por parte del repartidor en el mercado San Camilo antes del envío, para cumplir con el concepto de entrega única de la historia de usuario HU-07.

@@ -1,0 +1,54 @@
+@startuml actividades-preparacion-pedido
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #EEF2F8
+skinparam ActivityBorderColor #1A3A5C
+
+|Comprador|
+start
+:Selecciona productos de varios puestos y confirma pedido;
+
+|Sistema / Repartidor|
+:Valida el stock de cada puesto;
+if (¿Stock suficiente en todos los puestos?) then (sí)
+  :Reserva stock y procesa pago único (Yape/Plin);
+  if (¿Pago aprobado?) then (sí)
+    fork
+      :Notifica a cada comerciante por WhatsApp;
+    fork again
+      :Envía comprobante digital al comprador;
+    end fork
+  else (no)
+    :Libera stock reservado;
+    |Comprador|
+    :Recibe aviso de pago rechazado;
+    stop
+  endif
+else (no)
+  |Comprador|
+  :Ajusta las cantidades del carrito;
+  stop
+endif
+
+|Comerciante de Puesto|
+:Recibe notificación del pedido parcial;
+:Prepara los productos de su puesto;
+:Marca el pedido parcial como LISTO;
+
+|Sistema / Repartidor|
+:El repartidor recoge los paquetes de cada puesto;
+:Consolida todos los paquetes en el punto de acopio del mercado;
+:Transporta el pedido consolidado hacia la dirección del comprador;
+
+|Comprador|
+:Recibe el pedido consolidado y confirma recepción;
+stop
+
+note right
+  **Cambio de revisión (Feedback de usuario):**
+  Se añadió la etapa de consolidación previa en el 
+  punto de acopio del mercado antes del envío, evitando
+  que el repartidor haga entregas parciales al comprador.
+end note
+
+@enduml
