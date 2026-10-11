@@ -1,0 +1,34 @@
+@startuml paquetes
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+title San Camilo en Línea - Diagrama de Paquetes del Monolito Modular
+
+package "sancamilo" {
+  package "catalogo" as CAT
+  package "pedidos" as PED
+  package "pagos" as PAG
+  package "notificaciones" as NOT
+  package "reportes" as REP
+  package "compartido" as COM
+
+  PED ..> CAT : usa Producto y Puesto
+  PED ..> PAG : usa PasarelaPago (puerto)
+  PED ..> NOT : usa Notificador (puerto)
+  REP ..> PED : solo lectura
+
+  CAT ..> COM
+  PED ..> COM
+  PAG ..> COM
+  NOT ..> COM
+  REP ..> COM
+
+  note bottom of PAG
+    Regla C4 (ADR-001): Sin dependencias ciclicas.
+    El paquete 'pagos' NO depende de 'pedidos'.
+    La comunicacion se realiza mediante el puerto PasarelaPago.
+  end note
+}
+
+@enduml

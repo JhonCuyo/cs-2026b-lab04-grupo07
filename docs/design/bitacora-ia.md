@@ -82,3 +82,17 @@
 
 * **Verificación y Decisión del Equipo:**
   1. **Corregido (Feedback de usuario):** Se ajustó el diagrama agregando la partición de acopio y consolidación por parte del repartidor en el mercado San Camilo antes del envío, para cumplir con el concepto de entrega única de la historia de usuario HU-07.
+
+## Interacción 5 - Generación del Diagrama de Paquetes (E5)
+* **Fecha:** 2026-10-11
+* **Herramienta:** IA Generativa (ChatGPT / Claude / Gemini)
+* **Prompt utilizado:**
+  > "Genera un diagrama de paquetes en PlantUML para el monolito modular de San Camilo en Línea con los paquetes: catalogo, pedidos, pagos, notificaciones, reportes y compartido. Etiqueta las dependencias con sus respectivos puertos/clases y agrega una nota que asegure el cumplimiento de la regla C4 sin ciclos."
+
+* **Propuesta de la IA:**
+  1. Dibujó una relación directa bidireccional entre `pagos` y `pedidos` (`PAG ..> PED` y `PED ..> PAG`).
+  2. Involucró al paquete `reportes` como dependencia directa de `notificaciones`.
+
+* **Verificación y Decisión del Equipo:**
+  1. **Corregido (Regla C4):** Se eliminó la dependencia de `pagos` hacia `pedidos`. La comunicación es unidireccional utilizando el puerto `PasarelaPago`, evitando acoplamiento cíclico[cite: 4, 12].
+  2. **Corregido:** Se mantuvieron las dependencias comunes hacia el paquete `compartido` para mantener el aislamiento entre módulos.
