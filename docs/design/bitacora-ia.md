@@ -96,3 +96,17 @@
 * **Verificación y Decisión del Equipo:**
   1. **Corregido (Regla C4):** Se eliminó la dependencia de `pagos` hacia `pedidos`. La comunicación es unidireccional utilizando el puerto `PasarelaPago`, evitando acoplamiento cíclico[cite: 4, 12].
   2. **Corregido:** Se mantuvieron las dependencias comunes hacia el paquete `compartido` para mantener el aislamiento entre módulos.
+
+  ## Interacción 6 - Generación de Código e Ingeniería Inversa (E6)
+* **Fecha:** 2026-10-11
+* **Herramienta:** IA Generativa (ChatGPT / Claude / Gemini)
+* **Prompt utilizado:**
+  > "Genera el esqueleto en Python 3.10+ (utilizando dataclasses, Enum, Decimal, UUID y ABC) a partir del diagrama de clases PlantUML del modulo pedidos de San Camilo en Linea. Respeta exactamente los nombres en snake_case, tipos y metodos con NotImplementedError para adaptadores."
+
+* **Propuesta de la IA:**
+  1. Utilizó listas genéricas sin tipado de elementos (`lineas: list`).
+  2. Implementó la interfaz `PasarelaPago` como una clase concreta sin heredar de `ABC`.
+
+* **Verificación y Decisión del Equipo:**
+  1. **Corregido:** Se especificaron colecciones fuertemente tipadas (`list[LineaPedido]`) para permitir que herramientas de análisis estático como `pyreverse` detecten los tipos de las clases asociadas.
+  2. **Corregido:** Se heredó de `ABC` y se añadió el decorador `@abstractmethod` en `PasarelaPago` para representar adecuadamente la interfaz/puerto en Python.

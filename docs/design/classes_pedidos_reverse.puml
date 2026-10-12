@@ -1,0 +1,67 @@
+@startuml classes_pedidos
+set namespaceSeparator none
+class "EstadoPedido" as dominio.EstadoPedido {
+  name
+}
+class "EstadoPedidoPuesto" as dominio.EstadoPedidoPuesto {
+  name
+}
+class "LineaPedido" as dominio.LineaPedido {
+  cantidad : int
+  precio_unitario
+  producto
+  subtotal() -> Decimal
+}
+class "MedioPago" as dominio.MedioPago {
+  name
+}
+class "Pago" as dominio.Pago {
+  aprobado : bool
+  codigo_operacion : str
+  id : UUID
+  medio
+  monto
+}
+class "PasarelaPago" as dominio.PasarelaPago {
+  {abstract}cobrar(monto: Decimal, celular: str) -> Pago
+}
+class "PedidoMultipuesto" as dominio.PedidoMultipuesto {
+  estado
+  fecha : datetime
+  id : UUID
+  lineas : list[LineaPedido]
+  pago : Optional[Pago]
+  pedidos_puesto : list[PedidoPuesto]
+  total
+  agregar_linea(producto: Producto, cantidad: int) -> None
+  calcular_total() -> Decimal
+  cancelar(motivo: str) -> None
+  confirmar() -> None
+  registrar_pago(pago: Pago) -> None
+}
+class "PedidoPuesto" as dominio.PedidoPuesto {
+  estado_puesto
+  id : UUID
+  marcar_listo() -> None
+}
+class "PlinAdapter" as dominio.PlinAdapter {
+  {abstract}cobrar(monto: Decimal, celular: str) -> Pago
+}
+class "Producto" as dominio.Producto {
+  id : UUID
+  nombre : str
+  precio_unitario
+  stock_disponible : int
+  liberar(cantidad: int) -> None
+  reservar(cantidad: int) -> None
+}
+class "YapeAdapter" as dominio.YapeAdapter {
+  {abstract}cobrar(monto: Decimal, celular: str) -> Pago
+}
+dominio.PlinAdapter --|> dominio.PasarelaPago
+dominio.YapeAdapter --|> dominio.PasarelaPago
+dominio.PedidoMultipuesto --> dominio.EstadoPedido : estado
+dominio.PedidoPuesto --> dominio.EstadoPedidoPuesto : estado_puesto
+dominio.Pago --> dominio.MedioPago : medio
+dominio.LineaPedido --> dominio.Producto : producto
+@enduml
