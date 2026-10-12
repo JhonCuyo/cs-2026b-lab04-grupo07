@@ -90,3 +90,62 @@ flowchart TB
 
 ## Reflexión sobre el Uso de la IA
 El uso de asistentes de IA facilitó la exploración inicial de patrones y la aceleración en la sintaxis de diagramas como código (Mermaid y PlantUML). Sin embargo, identificamos que la IA tiende a sesgarse hacia arquitecturas complejas de moda (como Microservicios y Kubernetes), las cuales sobrepasan nuestras restricciones de 1 mes de plazo, equipo de 3 integrantes y despliegue en un único VPS económico. Aprendimos que la IA debe utilizarse únicamente como herramienta de soporte para acelerar la redacción y generación de borradores, mientras que el análisis crítico, la verificación de factibilidad real y la toma final de decisiones son responsabilidad absoluta del equipo humano.
+
+## Diseño UML (Lab 05) - San Camilo en Línea
+
+En esta sección se presenta el diseño detallado orientado a objetos para el sistema **San Camilo en Línea** (Caso 7), en coherencia con la arquitectura del `ADR-001` (monolito modular con puertos y adaptadores).
+
+### 1. Historia de Usuario y Criterios de Aceptación
+* Documento de la [Historia de Usuario HU-07](docs/design/historia.md) con sus criterios de aceptación en formato *Dado / Cuando / Entonces*.
+
+### 2. Diagrama de Clases (E1)
+Representa las entidades, objetos de valor, interfaces (puertos), adaptadores y servicios del dominio del módulo de Pedidos y Pagos.
+![Diagrama de Clases](img/clases.png)
+
+### 3. Diagrama de Secuencia (E2)
+Flujo dinámico del escenario principal para la confirmación de un pedido multipuesto y pago único con Yape.
+![Diagrama de Secuencia](img/secuencia-confirmar-pagar.png)
+
+### 4. Máquina de Estados (E3)
+Ciclo de vida de la entidad `PedidoPuesto`:
+
+```mermaid
+stateDiagram-v2
+    [*] --> RECIBIDO : crearPedidoPuesto()
+    RECIBIDO --> LISTO : marcarListo() [comerciante termina preparacion]
+    LISTO --> RECOGIDO : recogerPedido() [repartidor llega al puesto]
+    RECOGIDO --> ENTREGADO : confirmarEntrega() [comprador recibe todo]
+    
+    RECIBIDO --> RECHAZADO : rechazarPorFaltaStock() [sin insumos]
+    RECIBIDO --> CANCELADO : cancelar() [pago rechazado o timeout 15 min]
+    
+    ENTREGADO --> [*]
+    RECHAZADO --> [*]
+    CANCELADO --> [*]
+
+    note right of RECIBIDO
+        Al entrar: notificar comerciante por WhatsApp
+    end note
+
+    note right of RECOGIDO
+        Al entrar: consolidar en centro de acopio
+    end note
+```
+
+### 5. Diagrama de Actividades (E4)
+Proceso de negocio completo para la preparación, recojo y consolidación del pedido multipuesto en el mercado San Camilo.
+![Diagrama de Actividades](img/actividades-preparacion-pedido.png)
+
+### 6. Diagrama de Paquetes (E5)
+Estructura modular del sistema y regla de dependencias unidireccionales sin acoplamiento cíclico (Regla C4).
+![Diagrama de Paquetes](img/paquetes.png)
+
+### 7. Ingeniería Inversa y Round-Trip (E6)
+* [Código Fuente Esqueleto en Python](src/pedidos/dominio.py)
+* [Análisis de Diferencias y Mitigación Round-Trip](docs/design/round-trip.md)
+* Diagrama de clases derivado del código:
+![Diagrama de Clases por Ingeniería Inversa](img/classes_pedidos.png)
+
+### 8. Consistencia (C1-C5) y Bitácora de IA (E7)
+* [Informe de Auditoría de Consistencia (Reglas C1-C5)](docs/design/consistencia.md)
+* [Bitácora de Interacciones con la IA Generativa](docs/design/bitacora-ia.md)
