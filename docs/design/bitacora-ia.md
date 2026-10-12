@@ -110,3 +110,19 @@
 * **Verificación y Decisión del Equipo:**
   1. **Corregido:** Se especificaron colecciones fuertemente tipadas (`list[LineaPedido]`) para permitir que herramientas de análisis estático como `pyreverse` detecten los tipos de las clases asociadas.
   2. **Corregido:** Se heredó de `ABC` y se añadió el decorador `@abstractmethod` en `PasarelaPago` para representar adecuadamente la interfaz/puerto en Python.
+
+  ## Interacción 7 - Auditoría de Consistencia C1-C5 (E7)
+* **Fecha:** 2026-10-11
+* **Herramienta:** IA Generativa (ChatGPT / Claude / Gemini)
+* **Prompt utilizado (Prompt IA 3):**
+  > "Actúa como auditor de diseño de software. Analiza los 5 diagramas PlantUML/Mermaid adjuntos (clases, secuencia, estados, actividades y paquetes) del sistema San Camilo en Línea. Verifica las reglas C1 (mensajes de secuencia = operaciones), C2 (transiciones de estado = operaciones), C3 (multiplicidades de negocio), C4 (paquetes sin ciclos) y C5 (consistencia de nombres del dominio). Responde en una tabla con: Regla, Elemento, Hallazgo y Corrección sugerida."
+
+* **Propuesta de la IA:**
+  1. Reportó un error C1 alegando que `Notificador` no tenía operaciones asignadas.
+  2. Identificó la falta del método `recogerPedido()` en la clase `PedidoPuesto` para la regla C2.
+  3. Aseguró que el paquete `pagos` dependía cíclicamente de `pedidos` (regla C4).
+
+* **Verificación y Decisión del Equipo:**
+  1. **Falso positivo C1 identificado:** Se constató que `Notificador` declara `notificarNuevoPedido()`.
+  2. **Hallazgo aceptado C2:** Se incluyó `recogerPedido()` en `clases.puml`.
+  3. **Falso positivo C4 identificado:** Se verificó el diagrama `paquetes.puml`, confirmando que la flecha es unidireccional `PED ..> PAG` a través del puerto `PasarelaPago`.
