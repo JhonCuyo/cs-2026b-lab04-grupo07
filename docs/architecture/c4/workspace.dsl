@@ -93,6 +93,19 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
             autolayout lr
         }
 
+        dynamic sancamilo.api "ConfirmarYPagar" "Vista Dinámica: Confirmar pedido multipuesto y pagar con Yape." {
+            sancamilo.pwa -> sancamilo.api.pedidos "POST /pedidos/{id}/pago (confirmarYPagar)"
+            sancamilo.api.pedidos -> sancamilo.db "Busca el pedido multipuesto por ID"
+            sancamilo.api.pedidos -> sancamilo.api.catalogo "Reserva stock por cada línea del pedido"
+            sancamilo.api.pedidos -> sancamilo.api.pagos "Solicita cobro del total calculado (puerto PasarelaPago)"
+            sancamilo.api.pagos -> yape "Ejecuta cobro electrónico (cobrar total y celular)"
+            sancamilo.api.pagos -> sancamilo.db "Registra transacción de pago aprobada"
+            sancamilo.api.pedidos -> sancamilo.db "Actualiza estado del pedido a PAGADO"
+            sancamilo.api.pedidos -> sancamilo.api.notificaciones "Solicita notificar nuevo pedido (puerto Notificador)"
+            sancamilo.api.notificaciones -> sancamilo.cola "Encola mensaje asíncrono para WhatsApp por comerciante"
+            autolayout lr
+        }
+
         styles {
             element "Person" {
                 shape person
