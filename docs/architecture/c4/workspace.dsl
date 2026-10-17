@@ -3,12 +3,12 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
     !identifiers hierarchical
 
     model {
-        # Personas
+        # Personas (Actores de drivers.md)
         cliente = person "Cliente" "Ciudadano que busca productos en el mercado, realiza pedidos multipuesto y paga con Yape."
         comerciante = person "Comerciante" "Vendedor de puesto en el Mercado San Camilo que publica su catálogo y prepara pedidos desde gama baja/3G."
         repartidor = person "Repartidor" "Encargado de recoger los productos en los puestos y gestionar la entrega o despacho del pedido."
 
-        # Sistema Principal, Contenedores y Componentes
+        # Sistema Principal, Contenedores (Nivel 2) y Componentes (Nivel 3)
         sancamilo = softwareSystem "San Camilo en Línea" "Permite consultar el catálogo por puesto, realizar pedidos unificados multipuesto, pagarlos y gestionar su preparación y entrega." {
             
             pwa = container "PWA San Camilo" "Aplicación web progresiva ligera optimizada para redes 3G y celulares de gama baja." "React + Service Worker" "Web Browser"
@@ -53,7 +53,7 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
         sancamilo.api -> yape "Solicita cobro electrónico del pedido" "HTTPS/JSON"
         sancamilo.worker -> whatsapp "Envía mensaje de confirmación al comerciante" "HTTPS/JSON"
 
-        # Relaciones de Nivel 3 (Componentes de Backend API - Coherentes con paquetes.puml)
+        # Relaciones de Nivel 3 (Componentes de Backend API)
         sancamilo.pwa -> sancamilo.api.catalogo "Consulta puestos y publica productos" "HTTPS/JSON (REST)"
         sancamilo.pwa -> sancamilo.api.pedidos "Crea, confirma y actualiza pedidos multipuesto" "HTTPS/JSON (REST)"
         sancamilo.pwa -> sancamilo.api.reportes "Consulta reportes de ventas por puesto" "HTTPS/JSON (REST)"
@@ -75,6 +75,24 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
         sancamilo.api.pagos -> sancamilo.db "Registra transacciones de pago" "SQL/TCP"
         sancamilo.api.pagos -> yape "Ejecuta cobro electrónico mediante YapeAdapter" "HTTPS/JSON"
         sancamilo.api.notificaciones -> sancamilo.cola "Encola tarea asíncrona de notificación" "Redis protocol"
+
+        # Entorno de Despliegue (E5 - Coherente con R-03, R-04 y despliegue.py)
+        produccion = deploymentEnvironment "Producción" {
+            
+            deploymentNode "Dispositivo del Usuario (Cliente / Comerciante / Repartidor)" "Smartphones Android de gama baja (conectividad 3G) o navegador en PC." "Android / Navegador Web (Chrome Mobile)" {
+                containerInstance sancamilo.pwa
+            }
+
+            deploymentNode "Servidor VPS en la Nube (Único Nodo - R-03)" "Servidor virtual económico con proxy inverso Nginx (HTTPS/SSL) y monitoreo básico." "Ubuntu 24.04 LTS (2 vCPU, 4 GB RAM, 80 GB SSD)" {
+                
+                deploymentNode "Docker Compose" "Orquestador local de contenedores en un solo nodo para el MVP." "Docker Engine 27 + Nginx Reverse Proxy" {
+                    containerInstance sancamilo.api
+                    containerInstance sancamilo.worker
+                    containerInstance sancamilo.db
+                    containerInstance sancamilo.cola
+                }
+            }
+        }
     }
 
     views {
@@ -103,6 +121,11 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
             sancamilo.api.pedidos -> sancamilo.db "Actualiza estado del pedido a PAGADO"
             sancamilo.api.pedidos -> sancamilo.api.notificaciones "Solicita notificar nuevo pedido (puerto Notificador)"
             sancamilo.api.notificaciones -> sancamilo.cola "Encola mensaje asíncrono para WhatsApp por comerciante"
+            autolayout lr
+        }
+
+        deployment sancamilo produccion "Despliegue" "Vista de Despliegue en el entorno de Producción (MVP en VPS único)." {
+            include *
             autolayout lr
         }
 
