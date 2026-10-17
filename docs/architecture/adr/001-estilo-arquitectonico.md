@@ -13,8 +13,8 @@ El MVP de San Camilo en Línea debe lanzarse en producción en máximo 1 mes (R-
 3. **Monolito Modular (4.25):** Elección óptima que permite desacoplamiento por dominio en un solo despliegue.
 
 ## Decisión
-Usaremos una arquitectura de **Monolito Modular**[cite: 6, 10, 12]. El sistema estará estructurado en 5 módulos (Catálogo, Pedidos, Pagos, Notificaciones y Envíos) comunicados estrictamente mediante interfaces de aplicación públicas dentro de una misma unidad de despliegue.
+Usaremos una arquitectura de **Monolito Modular**. El sistema estará estructurado en 5 módulos de dominio principales (**Catálogo, Pedidos, Pagos, Notificaciones y Reportes**) apoyados por un módulo transversal (**Compartido**), comunicados estrictamente mediante interfaces de aplicación públicas (puertos) dentro de una misma unidad de despliegue.
 
 ## Consecuencias
-* **Positivas:** Bajo costo operativo en un solo VPS, entrega dentro del plazo de 1 mes y facilidad para extraer módulos a microservicios en el futuro si la demanda aumenta[cite: 6, 10].
+* **Positivas:** Bajo costo operativo en un solo VPS, entrega dentro del plazo de 1 mes y facilidad para extraer módulos a microservicios en el futuro si la demanda aumenta.
 * **Negativas / Riesgos:** Se requiere disciplina estricta en el código para respetar los límites de cada módulo y evitar dependencias circulares.

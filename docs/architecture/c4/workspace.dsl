@@ -8,12 +8,19 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
         comerciante = person "Comerciante" "Vendedor de puesto en el Mercado San Camilo que publica su catálogo y prepara pedidos desde gama baja/3G."
         repartidor = person "Repartidor" "Encargado de recoger los productos en los puestos y gestionar la entrega o despacho del pedido."
 
-        # Sistema Principal y Contenedores (Nivel 2)
+        # Sistema Principal, Contenedores y Componentes
         sancamilo = softwareSystem "San Camilo en Línea" "Permite consultar el catálogo por puesto, realizar pedidos unificados multipuesto, pagarlos y gestionar su preparación y entrega." {
             
             pwa = container "PWA San Camilo" "Aplicación web progresiva ligera optimizada para redes 3G y celulares de gama baja." "React + Service Worker" "Web Browser"
             
-            api = container "Backend API" "Monolito modular que expone la lógica de negocio mediante una API REST." "Python / Django REST Framework"
+            api = container "Backend API" "Monolito modular que expone la lógica de negocio mediante una API REST." "Python / Django REST Framework" {
+                catalogo = component "Módulo Catálogo" "Gestiona puestos del mercado, publicación de productos y reserva de stock." "Django app (catalogo)"
+                pedidos = component "Módulo Pedidos" "Orquesta el carrito multipuesto, confirmación, ciclo de vida del pedido y asignación de entrega." "Django app (pedidos)"
+                pagos = component "Módulo Pagos" "Procesa cobros desacoplados mediante el puerto PasarelaPago y su adaptador YapeAdapter." "Django app (pagos)"
+                notificaciones = component "Módulo Notificaciones" "Gestiona el envío asíncrono de avisos a comerciantes mediante el puerto Notificador." "Django app (notificaciones)"
+                reportes = component "Módulo Reportes" "Genera consultas y resúmenes de ventas por puesto en modo de solo lectura." "Django app (reportes)"
+                compartido = component "Módulo Compartido" "Provee clases base de dominio, utilidades transversales y excepciones comunes." "Python package (compartido)"
+            }
             
             worker = container "Worker de Tareas" "Procesa el envío asíncrono de notificaciones y reintentos sin bloquear las compras." "Celery"
             
@@ -45,6 +52,29 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
         
         sancamilo.api -> yape "Solicita cobro electrónico del pedido" "HTTPS/JSON"
         sancamilo.worker -> whatsapp "Envía mensaje de confirmación al comerciante" "HTTPS/JSON"
+
+        # Relaciones de Nivel 3 (Componentes de Backend API - Coherentes con paquetes.puml)
+        sancamilo.pwa -> sancamilo.api.catalogo "Consulta puestos y publica productos" "HTTPS/JSON (REST)"
+        sancamilo.pwa -> sancamilo.api.pedidos "Crea, confirma y actualiza pedidos multipuesto" "HTTPS/JSON (REST)"
+        sancamilo.pwa -> sancamilo.api.reportes "Consulta reportes de ventas por puesto" "HTTPS/JSON (REST)"
+
+        sancamilo.api.pedidos -> sancamilo.api.catalogo "Valida productos por puesto y reserva stock" "Llamada interna Python"
+        sancamilo.api.pedidos -> sancamilo.api.pagos "Solicita cobro mediante puerto PasarelaPago" "Llamada interna Python"
+        sancamilo.api.pedidos -> sancamilo.api.notificaciones "Solicita aviso de nuevo pedido mediante puerto Notificador" "Llamada interna Python"
+        sancamilo.api.reportes -> sancamilo.api.pedidos "Consulta pedidos históricos (solo lectura)" "Llamada interna Python"
+
+        sancamilo.api.catalogo -> sancamilo.api.compartido "Usa abstracciones base y utilidades" "Importación Python"
+        sancamilo.api.pedidos -> sancamilo.api.compartido "Usa abstracciones base y utilidades" "Importación Python"
+        sancamilo.api.pagos -> sancamilo.api.compartido "Usa abstracciones base y utilidades" "Importación Python"
+        sancamilo.api.notificaciones -> sancamilo.api.compartido "Usa abstracciones base y utilidades" "Importación Python"
+        sancamilo.api.reportes -> sancamilo.api.compartido "Usa abstracciones base y utilidades" "Importación Python"
+
+        sancamilo.api.catalogo -> sancamilo.db "Lee y escribe productos y puestos" "SQL/TCP"
+        sancamilo.api.catalogo -> sancamilo.cola "Lee y actualiza caché de catálogo" "Redis protocol"
+        sancamilo.api.pedidos -> sancamilo.db "Lee y escribe pedidos multipuesto" "SQL/TCP"
+        sancamilo.api.pagos -> sancamilo.db "Registra transacciones de pago" "SQL/TCP"
+        sancamilo.api.pagos -> yape "Ejecuta cobro electrónico mediante YapeAdapter" "HTTPS/JSON"
+        sancamilo.api.notificaciones -> sancamilo.cola "Encola tarea asíncrona de notificación" "Redis protocol"
     }
 
     views {
@@ -54,6 +84,11 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
         }
 
         container sancamilo "Contenedores" "Nivel 2: Contenedores que conforman San Camilo en Línea." {
+            include *
+            autolayout lr
+        }
+
+        component sancamilo.api "Componentes" "Nivel 3: Componentes internos del Monolito Modular (Backend API)." {
             include *
             autolayout lr
         }
@@ -75,6 +110,10 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
             element "Container" {
                 background #438DD5
                 color #ffffff
+            }
+            element "Component" {
+                background #85BBF0
+                color #000000
             }
             element "Database" {
                 shape cylinder
