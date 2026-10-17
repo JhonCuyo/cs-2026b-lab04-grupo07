@@ -1,0 +1,26 @@
+@startuml contexto-manual
+!include <C4/C4_Context>
+
+skinparam dpi 180
+LAYOUT_LEFT_RIGHT()
+
+title Contexto de San Camilo en Línea (C4-PlantUML escrito a mano)
+
+Person(cliente, "Cliente", "Ciudadano que busca productos en el mercado, realiza pedidos multipuesto y paga con Yape.")
+Person(comerciante, "Comerciante", "Vendedor de puesto en el Mercado San Camilo que publica su catálogo y prepara pedidos desde gama baja/3G.")
+Person(repartidor, "Repartidor", "Encargado de recoger los productos en los puestos y gestionar la entrega o despacho del pedido.")
+
+System(sancamilo, "San Camilo en Línea", "Permite consultar el catálogo por puesto, realizar pedidos unificados multipuesto, pagarlos y gestionar su preparación y entrega.")
+
+System_Ext(yape, "Pasarela Yape API", "Procesa el cobro electrónico de los pedidos mediante billetera móvil.")
+System_Ext(whatsapp, "WhatsApp Business API", "Envía notificaciones de confirmación y detalle de pedidos a los comerciantes.")
+
+Rel(cliente, sancamilo, "Busca catálogo por puesto, realiza pedidos multipuesto y paga")
+Rel(comerciante, sancamilo, "Publica catálogo en pocos pasos, consulta ventas y actualiza preparación de pedidos")
+Rel(repartidor, sancamilo, "Consulta pedidos asignados y registra el estado de recojo/delivery")
+
+Rel(sancamilo, yape, "Solicita cobros de pedidos", "HTTPS/JSON")
+Rel(sancamilo, whatsapp, "Envía notificaciones de pedidos confirmados", "HTTPS/JSON")
+
+SHOW_LEGEND()
+@enduml

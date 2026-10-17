@@ -1,0 +1,36 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["San Camilo en Línea - Deployment - Producción"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 50 [Dispositivo del Usuario (Cliente / Comerciante / Repartidor)]
+      style 50 fill:#ffffff,stroke:#888888,color:#000000
+
+      51["<div style='font-weight: bold'>PWA San Camilo</div><div style='font-size: 70%; margin-top: 0px'>[Container: React + Service Worker]</div><div style='font-size: 80%; margin-top:10px'>Aplicación web progresiva<br />ligera optimizada para redes<br />3G y celulares de gama baja.</div>"]
+      style 51 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    subgraph 52 [Servidor VPS en la Nube (Único Nodo - R-03)]
+      style 52 fill:#ffffff,stroke:#888888,color:#000000
+
+      subgraph 53 [Docker Compose]
+        style 53 fill:#ffffff,stroke:#888888,color:#000000
+
+        54["<div style='font-weight: bold'>Backend API</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python / Django REST Framework]</div><div style='font-size: 80%; margin-top:10px'>Monolito modular que expone<br />la lógica de negocio mediante<br />una API REST.</div>"]
+        style 54 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        56["<div style='font-weight: bold'>Worker de Tareas</div><div style='font-size: 70%; margin-top: 0px'>[Container: Celery]</div><div style='font-size: 80%; margin-top:10px'>Procesa el envío asíncrono de<br />notificaciones y reintentos<br />sin bloquear las compras.</div>"]
+        style 56 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        57[("<div style='font-weight: bold'>Base de Datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Almacena catálogo de puestos,<br />pedidos multipuesto y pagos<br />con esquemas aislados por<br />módulo.</div>")]
+        style 57 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        59["<div style='font-weight: bold'>Cola y Caché</div><div style='font-size: 70%; margin-top: 0px'>[Container: Redis]</div><div style='font-size: 80%; margin-top:10px'>Broker de mensajería para<br />tareas asíncronas y caché de<br />lecturas del catálogo.</div>"]
+        style 59 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      end
+
+    end
+
+    51-. "<div>Realiza peticiones a la API</div><div style='font-size: 70%'>[HTTPS/JSON (REST)]</div>" .->54
+    54-. "<div>Lee y escribe registros en<br />esquemas aislados</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->57
+    54-. "<div>Encola eventos de<br />notificación y consulta caché<br />de catálogo</div><div style='font-size: 70%'>[Redis protocol]</div>" .->59
+    56-. "<div>Consume tareas de<br />notificación encoladas</div><div style='font-size: 70%'>[Redis protocol]</div>" .->59
+  end

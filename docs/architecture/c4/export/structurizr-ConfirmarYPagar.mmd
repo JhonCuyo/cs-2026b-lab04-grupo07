@@ -1,0 +1,38 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Backend API - Dynamic"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 6 [Backend API]
+      style 6 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+      10["<div style='font-weight: bold'>Módulo Notificaciones</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (notificaciones)]</div><div style='font-size: 80%; margin-top:10px'>Gestiona el envío asíncrono<br />de avisos a comerciantes<br />mediante el puerto<br />Notificador.</div>"]
+      style 10 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      7["<div style='font-weight: bold'>Módulo Catálogo</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (catalogo)]</div><div style='font-size: 80%; margin-top:10px'>Gestiona puestos del mercado,<br />publicación de productos y<br />reserva de stock.</div>"]
+      style 7 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      8["<div style='font-weight: bold'>Módulo Pedidos</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (pedidos)]</div><div style='font-size: 80%; margin-top:10px'>Orquesta el carrito<br />multipuesto, confirmación,<br />ciclo de vida del pedido y<br />asignación de entrega.</div>"]
+      style 8 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      9["<div style='font-weight: bold'>Módulo Pagos</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (pagos)]</div><div style='font-size: 80%; margin-top:10px'>Procesa cobros desacoplados<br />mediante el puerto<br />PasarelaPago y su adaptador<br />YapeAdapter.</div>"]
+      style 9 fill:#85bbf0,stroke:#5d82a8,color:#000000
+    end
+
+    5["<div style='font-weight: bold'>PWA San Camilo</div><div style='font-size: 70%; margin-top: 0px'>[Container: React + Service Worker]</div><div style='font-size: 80%; margin-top:10px'>Aplicación web progresiva<br />ligera optimizada para redes<br />3G y celulares de gama baja.</div>"]
+    style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    14[("<div style='font-weight: bold'>Base de Datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Almacena catálogo de puestos,<br />pedidos multipuesto y pagos<br />con esquemas aislados por<br />módulo.</div>")]
+    style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    15["<div style='font-weight: bold'>Cola y Caché</div><div style='font-size: 70%; margin-top: 0px'>[Container: Redis]</div><div style='font-size: 80%; margin-top:10px'>Broker de mensajería para<br />tareas asíncronas y caché de<br />lecturas del catálogo.</div>"]
+    style 15 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    16["<div style='font-weight: bold'>Pasarela Yape API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa el cobro electrónico<br />de los pedidos mediante<br />billetera móvil.</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
+
+    5-. "<div>1. POST /pedidos/{id}/pago<br />(confirmarYPagar)</div><div style='font-size: 70%'>[HTTPS/JSON (REST)]</div>" .->8
+    8-. "<div>2. Busca el pedido<br />multipuesto por ID</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    8-. "<div>3. Reserva stock por cada<br />línea del pedido</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->7
+    8-. "<div>4. Solicita cobro del total<br />calculado (puerto<br />PasarelaPago)</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->9
+    9-. "<div>5. Ejecuta cobro electrónico<br />(cobrar total y celular)</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->16
+    9-. "<div>6. Registra transacción de<br />pago aprobada</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    8-. "<div>7. Actualiza estado del<br />pedido a PAGADO</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    8-. "<div>8. Solicita notificar nuevo<br />pedido (puerto Notificador)</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->10
+    10-. "<div>9. Encola mensaje asíncrono<br />para WhatsApp por comerciante</div><div style='font-size: 70%'>[Redis protocol]</div>" .->15
+  end

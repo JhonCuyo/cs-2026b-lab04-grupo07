@@ -1,0 +1,42 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["San Camilo en Línea - Containers"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Cliente</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Ciudadano que busca productos<br />en el mercado, realiza<br />pedidos multipuesto y paga<br />con Yape.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+    2["<div style='font-weight: bold'>Comerciante</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Vendedor de puesto en el<br />Mercado San Camilo que<br />publica su catálogo y prepara<br />pedidos desde gama baja/3G.</div>"]
+    style 2 fill:#08427b,stroke:#052e56,color:#ffffff
+    3["<div style='font-weight: bold'>Repartidor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Encargado de recoger los<br />productos en los puestos y<br />gestionar la entrega o<br />despacho del pedido.</div>"]
+    style 3 fill:#08427b,stroke:#052e56,color:#ffffff
+    16["<div style='font-weight: bold'>Pasarela Yape API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa el cobro electrónico<br />de los pedidos mediante<br />billetera móvil.</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    17["<div style='font-weight: bold'>WhatsApp Business API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Envía notificaciones de<br />confirmación y detalle de<br />pedidos a los comerciantes.</div>"]
+    style 17 fill:#999999,stroke:#6b6b6b,color:#ffffff
+
+    subgraph 4 [San Camilo en Línea]
+      style 4 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      13["<div style='font-weight: bold'>Worker de Tareas</div><div style='font-size: 70%; margin-top: 0px'>[Container: Celery]</div><div style='font-size: 80%; margin-top:10px'>Procesa el envío asíncrono de<br />notificaciones y reintentos<br />sin bloquear las compras.</div>"]
+      style 13 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      14[("<div style='font-weight: bold'>Base de Datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Almacena catálogo de puestos,<br />pedidos multipuesto y pagos<br />con esquemas aislados por<br />módulo.</div>")]
+      style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      15["<div style='font-weight: bold'>Cola y Caché</div><div style='font-size: 70%; margin-top: 0px'>[Container: Redis]</div><div style='font-size: 80%; margin-top:10px'>Broker de mensajería para<br />tareas asíncronas y caché de<br />lecturas del catálogo.</div>"]
+      style 15 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      5["<div style='font-weight: bold'>PWA San Camilo</div><div style='font-size: 70%; margin-top: 0px'>[Container: React + Service Worker]</div><div style='font-size: 80%; margin-top:10px'>Aplicación web progresiva<br />ligera optimizada para redes<br />3G y celulares de gama baja.</div>"]
+      style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      6["<div style='font-weight: bold'>Backend API</div><div style='font-size: 70%; margin-top: 0px'>[Container: Python / Django REST Framework]</div><div style='font-size: 80%; margin-top:10px'>Monolito modular que expone<br />la lógica de negocio mediante<br />una API REST.</div>"]
+      style 6 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    1-. "<div>Navega el catálogo y realiza<br />pedidos desde su navegador</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    2-. "<div>Gestiona productos y pedidos<br />en red 3G</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    3-. "<div>Consulta hojas de recojo y<br />actualiza entregas</div><div style='font-size: 70%'>[HTTPS]</div>" .->5
+    5-. "<div>Realiza peticiones a la API</div><div style='font-size: 70%'>[HTTPS/JSON (REST)]</div>" .->6
+    6-. "<div>Lee y escribe registros en<br />esquemas aislados</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    6-. "<div>Encola eventos de<br />notificación y consulta caché<br />de catálogo</div><div style='font-size: 70%'>[Redis protocol]</div>" .->15
+    13-. "<div>Consume tareas de<br />notificación encoladas</div><div style='font-size: 70%'>[Redis protocol]</div>" .->15
+    6-. "<div>Solicita cobro electrónico<br />del pedido</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->16
+    13-. "<div>Envía mensaje de confirmación<br />al comerciante</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->17
+  end

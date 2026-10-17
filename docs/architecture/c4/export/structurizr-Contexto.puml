@@ -1,0 +1,24 @@
+@startuml
+set separator none
+title San Camilo en Línea - System Context
+
+left to right direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+
+Person(Cliente, "Cliente", $descr="Ciudadano que busca productos en el mercado, realiza pedidos multipuesto y paga con Yape.", $tags="", $link="")
+System(PasarelaYapeAPI, "Pasarela Yape API", $descr="Procesa el cobro electrónico de los pedidos mediante billetera móvil.", $tags="", $link="")
+System(WhatsAppBusinessAPI, "WhatsApp Business API", $descr="Envía notificaciones de confirmación y detalle de pedidos a los comerciantes.", $tags="", $link="")
+Person(Comerciante, "Comerciante", $descr="Vendedor de puesto en el Mercado San Camilo que publica su catálogo y prepara pedidos desde gama baja/3G.", $tags="", $link="")
+Person(Repartidor, "Repartidor", $descr="Encargado de recoger los productos en los puestos y gestionar la entrega o despacho del pedido.", $tags="", $link="")
+System(SanCamiloenLínea, "San Camilo en Línea", $descr="Permite consultar el catálogo por puesto, realizar pedidos unificados multipuesto, pagarlos y gestionar su preparación y entrega.", $tags="", $link="")
+
+Rel(Cliente, SanCamiloenLínea, "Busca catálogo por puesto, realiza pedidos multipuesto y paga", $techn="", $tags="", $link="")
+Rel(Comerciante, SanCamiloenLínea, "Publica catálogo en pocos pasos, consulta ventas y actualiza preparación de pedidos", $techn="", $tags="", $link="")
+Rel(Repartidor, SanCamiloenLínea, "Consulta pedidos asignados y registra el estado de recojo/delivery", $techn="", $tags="", $link="")
+Rel(SanCamiloenLínea, PasarelaYapeAPI, "Solicita cobros de pedidos", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(SanCamiloenLínea, WhatsAppBusinessAPI, "Envía notificaciones de pedidos confirmados", $techn="HTTPS/JSON", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml
