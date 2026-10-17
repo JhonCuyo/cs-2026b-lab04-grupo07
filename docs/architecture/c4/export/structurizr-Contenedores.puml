@@ -1,0 +1,36 @@
+@startuml
+set separator none
+title San Camilo en Línea - Containers
+
+left to right direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+Person(Cliente, "Cliente", $descr="Ciudadano que busca productos en el mercado, realiza pedidos multipuesto y paga con Yape.", $tags="", $link="")
+Person(Comerciante, "Comerciante", $descr="Vendedor de puesto en el Mercado San Camilo que publica su catálogo y prepara pedidos desde gama baja/3G.", $tags="", $link="")
+Person(Repartidor, "Repartidor", $descr="Encargado de recoger los productos en los puestos y gestionar la entrega o despacho del pedido.", $tags="", $link="")
+System(PasarelaYapeAPI, "Pasarela Yape API", $descr="Procesa el cobro electrónico de los pedidos mediante billetera móvil.", $tags="", $link="")
+System(WhatsAppBusinessAPI, "WhatsApp Business API", $descr="Envía notificaciones de confirmación y detalle de pedidos a los comerciantes.", $tags="", $link="")
+
+System_Boundary("SanCamiloenLínea_boundary", "San Camilo en Línea", $tags="") {
+  Container(SanCamiloenLínea.WorkerdeTareas, "Worker de Tareas", $techn="Celery", $descr="Procesa el envío asíncrono de notificaciones y reintentos sin bloquear las compras.", $tags="", $link="")
+  ContainerDb(SanCamiloenLínea.BasedeDatos, "Base de Datos", $techn="PostgreSQL 16", $descr="Almacena catálogo de puestos, pedidos multipuesto y pagos con esquemas aislados por módulo.", $tags="", $link="")
+  ContainerQueue(SanCamiloenLínea.ColayCaché, "Cola y Caché", $techn="Redis", $descr="Broker de mensajería para tareas asíncronas y caché de lecturas del catálogo.", $tags="", $link="")
+  Container(SanCamiloenLínea.PWASanCamilo, "PWA San Camilo", $techn="React + Service Worker", $descr="Aplicación web progresiva ligera optimizada para redes 3G y celulares de gama baja.", $tags="", $link="")
+  Container(SanCamiloenLínea.BackendAPI, "Backend API", $techn="Python / Django REST Framework", $descr="Monolito modular que expone la lógica de negocio mediante una API REST.", $tags="", $link="")
+}
+
+Rel(Cliente, SanCamiloenLínea.PWASanCamilo, "Navega el catálogo y realiza pedidos desde su navegador", $techn="HTTPS", $tags="", $link="")
+Rel(Comerciante, SanCamiloenLínea.PWASanCamilo, "Gestiona productos y pedidos en red 3G", $techn="HTTPS", $tags="", $link="")
+Rel(Repartidor, SanCamiloenLínea.PWASanCamilo, "Consulta hojas de recojo y actualiza entregas", $techn="HTTPS", $tags="", $link="")
+Rel(SanCamiloenLínea.PWASanCamilo, SanCamiloenLínea.BackendAPI, "Realiza peticiones a la API", $techn="HTTPS/JSON (REST)", $tags="", $link="")
+Rel(SanCamiloenLínea.BackendAPI, SanCamiloenLínea.BasedeDatos, "Lee y escribe registros en esquemas aislados", $techn="SQL/TCP", $tags="", $link="")
+Rel(SanCamiloenLínea.BackendAPI, SanCamiloenLínea.ColayCaché, "Encola eventos de notificación y consulta caché de catálogo", $techn="Redis protocol", $tags="", $link="")
+Rel(SanCamiloenLínea.WorkerdeTareas, SanCamiloenLínea.ColayCaché, "Consume tareas de notificación encoladas", $techn="Redis protocol", $tags="", $link="")
+Rel(SanCamiloenLínea.BackendAPI, PasarelaYapeAPI, "Solicita cobro electrónico del pedido", $techn="HTTPS/JSON", $tags="", $link="")
+Rel(SanCamiloenLínea.WorkerdeTareas, WhatsAppBusinessAPI, "Envía mensaje de confirmación al comerciante", $techn="HTTPS/JSON", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml

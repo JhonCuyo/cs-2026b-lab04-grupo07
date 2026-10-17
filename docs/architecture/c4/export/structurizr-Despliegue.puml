@@ -1,0 +1,32 @@
+@startuml
+set separator none
+title San Camilo en Línea - Deployment - Producción
+
+left to right direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Deployment>
+
+Deployment_Node(Producción.DispositivodelUsuarioClienteComercianteRepartidor, "Dispositivo del Usuario (Cliente / Comerciante / Repartidor)", $type="Android / Navegador Web (Chrome Mobile)", $descr="Smartphones Android de gama baja (conectividad 3G) o navegador en PC.", $tags="", $link="") {
+  Container(Producción.DispositivodelUsuarioClienteComercianteRepartidor.PWASanCamilo_1, "PWA San Camilo", $techn="React + Service Worker", $descr="Aplicación web progresiva ligera optimizada para redes 3G y celulares de gama baja.", $tags="", $link="")
+}
+
+Deployment_Node(Producción.ServidorVPSenlaNubeÚnicoNodoR03, "Servidor VPS en la Nube (Único Nodo - R-03)", $type="Ubuntu 24.04 LTS (2 vCPU, 4 GB RAM, 80 GB SSD)", $descr="Servidor virtual económico con proxy inverso Nginx (HTTPS/SSL) y monitoreo básico.", $tags="", $link="") {
+  Deployment_Node(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose, "Docker Compose", $type="Docker Engine 27 + Nginx Reverse Proxy", $descr="Orquestador local de contenedores en un solo nodo para el MVP.", $tags="", $link="") {
+    Container(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.BackendAPI_1, "Backend API", $techn="Python / Django REST Framework", $descr="Monolito modular que expone la lógica de negocio mediante una API REST.", $tags="", $link="")
+    Container(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.WorkerdeTareas_1, "Worker de Tareas", $techn="Celery", $descr="Procesa el envío asíncrono de notificaciones y reintentos sin bloquear las compras.", $tags="", $link="")
+    ContainerDb(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.BasedeDatos_1, "Base de Datos", $techn="PostgreSQL 16", $descr="Almacena catálogo de puestos, pedidos multipuesto y pagos con esquemas aislados por módulo.", $tags="", $link="")
+    ContainerQueue(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.ColayCaché_1, "Cola y Caché", $techn="Redis", $descr="Broker de mensajería para tareas asíncronas y caché de lecturas del catálogo.", $tags="", $link="")
+  }
+
+}
+
+Rel(Producción.DispositivodelUsuarioClienteComercianteRepartidor.PWASanCamilo_1, Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.BackendAPI_1, "Realiza peticiones a la API", $techn="HTTPS/JSON (REST)", $tags="", $link="")
+Rel(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.BackendAPI_1, Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.BasedeDatos_1, "Lee y escribe registros en esquemas aislados", $techn="SQL/TCP", $tags="", $link="")
+Rel(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.BackendAPI_1, Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.ColayCaché_1, "Encola eventos de notificación y consulta caché de catálogo", $techn="Redis protocol", $tags="", $link="")
+Rel(Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.WorkerdeTareas_1, Producción.ServidorVPSenlaNubeÚnicoNodoR03.DockerCompose.ColayCaché_1, "Consume tareas de notificación encoladas", $techn="Redis protocol", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml

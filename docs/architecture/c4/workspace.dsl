@@ -124,7 +124,7 @@ workspace "San Camilo en Línea" "Modelo C4 de la plataforma de comercio electr�
             autolayout lr
         }
 
-        deployment sancamilo produccion "Despliegue" "Vista de Despliegue en el entorno de Producción (MVP en VPS único)." {
+        deployment sancamilo "Producción" "Despliegue" "Vista de Despliegue en el entorno de Producción (MVP en VPS único)." {
             include *
             autolayout lr
         }

@@ -1,0 +1,51 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["San Camilo en Línea - Backend API - Components"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    5["<div style='font-weight: bold'>PWA San Camilo</div><div style='font-size: 70%; margin-top: 0px'>[Container: React + Service Worker]</div><div style='font-size: 80%; margin-top:10px'>Aplicación web progresiva<br />ligera optimizada para redes<br />3G y celulares de gama baja.</div>"]
+    style 5 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    14[("<div style='font-weight: bold'>Base de Datos</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16]</div><div style='font-size: 80%; margin-top:10px'>Almacena catálogo de puestos,<br />pedidos multipuesto y pagos<br />con esquemas aislados por<br />módulo.</div>")]
+    style 14 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    15["<div style='font-weight: bold'>Cola y Caché</div><div style='font-size: 70%; margin-top: 0px'>[Container: Redis]</div><div style='font-size: 80%; margin-top:10px'>Broker de mensajería para<br />tareas asíncronas y caché de<br />lecturas del catálogo.</div>"]
+    style 15 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    16["<div style='font-weight: bold'>Pasarela Yape API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa el cobro electrónico<br />de los pedidos mediante<br />billetera móvil.</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
+
+    subgraph 6 [Backend API]
+      style 6 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+      10["<div style='font-weight: bold'>Módulo Notificaciones</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (notificaciones)]</div><div style='font-size: 80%; margin-top:10px'>Gestiona el envío asíncrono<br />de avisos a comerciantes<br />mediante el puerto<br />Notificador.</div>"]
+      style 10 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      11["<div style='font-weight: bold'>Módulo Reportes</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (reportes)]</div><div style='font-size: 80%; margin-top:10px'>Genera consultas y resúmenes<br />de ventas por puesto en modo<br />de solo lectura.</div>"]
+      style 11 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      12["<div style='font-weight: bold'>Módulo Compartido</div><div style='font-size: 70%; margin-top: 0px'>[Component: Python package (compartido)]</div><div style='font-size: 80%; margin-top:10px'>Provee clases base de<br />dominio, utilidades<br />transversales y excepciones<br />comunes.</div>"]
+      style 12 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      7["<div style='font-weight: bold'>Módulo Catálogo</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (catalogo)]</div><div style='font-size: 80%; margin-top:10px'>Gestiona puestos del mercado,<br />publicación de productos y<br />reserva de stock.</div>"]
+      style 7 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      8["<div style='font-weight: bold'>Módulo Pedidos</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (pedidos)]</div><div style='font-size: 80%; margin-top:10px'>Orquesta el carrito<br />multipuesto, confirmación,<br />ciclo de vida del pedido y<br />asignación de entrega.</div>"]
+      style 8 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      9["<div style='font-weight: bold'>Módulo Pagos</div><div style='font-size: 70%; margin-top: 0px'>[Component: Django app (pagos)]</div><div style='font-size: 80%; margin-top:10px'>Procesa cobros desacoplados<br />mediante el puerto<br />PasarelaPago y su adaptador<br />YapeAdapter.</div>"]
+      style 9 fill:#85bbf0,stroke:#5d82a8,color:#000000
+    end
+
+    5-. "<div>Consulta puestos y publica<br />productos</div><div style='font-size: 70%'>[HTTPS/JSON (REST)]</div>" .->7
+    5-. "<div>Crea, confirma y actualiza<br />pedidos multipuesto</div><div style='font-size: 70%'>[HTTPS/JSON (REST)]</div>" .->8
+    5-. "<div>Consulta reportes de ventas<br />por puesto</div><div style='font-size: 70%'>[HTTPS/JSON (REST)]</div>" .->11
+    8-. "<div>Valida productos por puesto y<br />reserva stock</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->7
+    8-. "<div>Solicita cobro mediante<br />puerto PasarelaPago</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->9
+    8-. "<div>Solicita aviso de nuevo<br />pedido mediante puerto<br />Notificador</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->10
+    11-. "<div>Consulta pedidos históricos<br />(solo lectura)</div><div style='font-size: 70%'>[Llamada interna Python]</div>" .->8
+    7-. "<div>Usa abstracciones base y<br />utilidades</div><div style='font-size: 70%'>[Importación Python]</div>" .->12
+    8-. "<div>Usa abstracciones base y<br />utilidades</div><div style='font-size: 70%'>[Importación Python]</div>" .->12
+    9-. "<div>Usa abstracciones base y<br />utilidades</div><div style='font-size: 70%'>[Importación Python]</div>" .->12
+    10-. "<div>Usa abstracciones base y<br />utilidades</div><div style='font-size: 70%'>[Importación Python]</div>" .->12
+    11-. "<div>Usa abstracciones base y<br />utilidades</div><div style='font-size: 70%'>[Importación Python]</div>" .->12
+    7-. "<div>Lee y escribe productos y<br />puestos</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    7-. "<div>Lee y actualiza caché de<br />catálogo</div><div style='font-size: 70%'>[Redis protocol]</div>" .->15
+    8-. "<div>Lee y escribe pedidos<br />multipuesto</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    9-. "<div>Registra transacciones de<br />pago</div><div style='font-size: 70%'>[SQL/TCP]</div>" .->14
+    9-. "<div>Ejecuta cobro electrónico<br />mediante YapeAdapter</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->16
+    10-. "<div>Encola tarea asíncrona de<br />notificación</div><div style='font-size: 70%'>[Redis protocol]</div>" .->15
+  end
