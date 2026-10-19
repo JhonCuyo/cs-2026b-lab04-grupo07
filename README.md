@@ -149,3 +149,58 @@ Estructura modular del sistema y regla de dependencias unidireccionales sin acop
 ### 8. Consistencia (C1-C5) y Bitácora de IA (E7)
 * [Informe de Auditoría de Consistencia (Reglas C1-C5)](docs/design/consistencia.md)
 * [Bitácora de Interacciones con la IA Generativa](docs/design/bitacora-ia.md)
+
+---
+
+## Arquitectura C4 (Lab 06) — San Camilo en Línea
+
+Modelado de arquitectura como código elaborado con **Structurizr DSL** (`docs/architecture/c4/workspace.dsl`), coherente con las decisiones del **ADR-001 (Monolito Modular)** del Laboratorio 04 y el **Diseño UML** del Laboratorio 05.
+
+### Nivel 1: Diagrama de Contexto en Mermaid
+
+```mermaid
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["San Camilo en Línea - System Context"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Cliente</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Ciudadano que busca productos<br />en el mercado, realiza<br />pedidos multipuesto y paga<br />con Yape.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+    2["<div style='font-weight: bold'>Comerciante</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Vendedor de puesto en el<br />Mercado San Camilo que<br />publica su catálogo y prepara<br />pedidos desde gama baja/3G.</div>"]
+    style 2 fill:#08427b,stroke:#052e56,color:#ffffff
+    3["<div style='font-weight: bold'>Repartidor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Encargado de recoger los<br />productos en los puestos y<br />gestionar la entrega o<br />despacho del pedido.</div>"]
+    style 3 fill:#08427b,stroke:#052e56,color:#ffffff
+    4["<div style='font-weight: bold'>San Camilo en Línea</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Permite consultar el catálogo<br />por puesto, realizar pedidos<br />unificados multipuesto,<br />pagarlos y gestionar su<br />preparación y entrega.</div>"]
+    style 4 fill:#1168bd,stroke:#0b4884,color:#ffffff
+    16["<div style='font-weight: bold'>Pasarela Yape API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Procesa el cobro electrónico<br />de los pedidos mediante<br />billetera móvil.</div>"]
+    style 16 fill:#999999,stroke:#6b6b6b,color:#ffffff
+    17["<div style='font-weight: bold'>WhatsApp Business API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Envía notificaciones de<br />confirmación y detalle de<br />pedidos a los comerciantes.</div>"]
+    style 17 fill:#999999,stroke:#6b6b6b,color:#ffffff
+
+    1-. "<div>Busca catálogo por puesto,<br />realiza pedidos multipuesto y<br />paga</div><div style='font-size: 70%'></div>" .->4
+    2-. "<div>Publica catálogo en pocos<br />pasos, consulta ventas y<br />actualiza preparación de<br />pedidos</div><div style='font-size: 70%'></div>" .->4
+    3-. "<div>Consulta pedidos asignados y<br />registra el estado de<br />recojo/delivery</div><div style='font-size: 70%'></div>" .->4
+    4-. "<div>Solicita cobros de pedidos</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->16
+    4-. "<div>Envía notificaciones de<br />pedidos confirmados</div><div style='font-size: 70%'>[HTTPS/JSON]</div>" .->17
+  end
+```
+
+### Vistas Exportadas del Modelo C4 (`workspace.dsl`)
+
+1. **Nivel 1 — Contexto del Sistema:** [Ver imagen PNG](docs/architecture/c4/img/structurizr-Contexto.png) | [Ver Contexto escrito a mano](docs/architecture/c4/img/contexto-manual.png)
+2. **Nivel 2 — Contenedores:** [Ver imagen PNG](docs/architecture/c4/img/structurizr-Contenedores.png)
+3. **Nivel 3 — Componentes (Backend API):** [Ver imagen PNG](docs/architecture/c4/img/structurizr-Componentes.png)
+4. **Nivel 4 — Código (Clases UML del Lab 05):** [Ver diagrama de clases UML](docs/design/clases.puml)
+5. **Vista Complementaria — Dinámica (Confirmar y Pagar):** [Ver imagen PNG](docs/architecture/c4/img/structurizr-ConfirmarYPagar.png)
+6. **Vista Complementaria — Despliegue (Producción):** [Ver imagen PNG](docs/architecture/c4/img/structurizr-Despliegue.png)
+
+### Documentación del Laboratorio 06
+* [Inventario de elementos C4 (`inventario.md`)](docs/architecture/c4/inventario.md)
+* [Modelo fuente en Structurizr DSL (`workspace.dsl`)](docs/architecture/c4/workspace.dsl)
+* [Comparación de herramientas y vistas (`comparacion.md`)](docs/architecture/c4/comparacion.md)
+* [Lista de revisión oficial y auditoría IA (`revision-c4.md`)](docs/architecture/c4/revision-c4.md)
+* [Explicación para público no técnico (`explicacion.md`)](docs/architecture/c4/explicacion.md)
+* [Bitácora de uso de IA (`bitacora-ia.md`)](docs/architecture/c4/bitacora-ia.md)
+
+---
