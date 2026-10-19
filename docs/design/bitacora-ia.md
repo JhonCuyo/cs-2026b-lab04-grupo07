@@ -126,3 +126,73 @@
   1. **Falso positivo C1 identificado:** Se constató que `Notificador` declara `notificarNuevoPedido()`.
   2. **Hallazgo aceptado C2:** Se incluyó `recogerPedido()` en `clases.puml`.
   3. **Falso positivo C4 identificado:** Se verificó el diagrama `paquetes.puml`, confirmando que la flecha es unidireccional `PED ..> PAG` a través del puerto `PasarelaPago`.
+
+# Bitácora de Uso de IA — Laboratorio 06 (Modelo C4)
+
+Registro de interacciones con IA generativa siguiendo la regla de oro: *"La IA propone, el equipo decide y verifica"*.
+
+---
+
+### Interacción 1: Generación del borrador inicial de `workspace.dsl` (Nivel 1 y Nivel 2)
+* **Fecha:** 2026-10-13
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt (Prompt IA 1 adaptado):**
+  > Actúa como arquitecto de software experto en el modelo C4 y en Structurizr DSL. Contexto: Adjunto `inventario.md`, `001-estilo-arquitectonico.md` (Monolito Modular para San Camilo en Línea), `drivers.md` y `despliegue.py`. Tarea: escribe un workspace de Structurizr DSL con personas, el sistema, sus contenedores (con tecnología), los componentes del contenedor API, los sistemas externos (con la etiqueta "Externo") y relaciones con descripción y protocolo. Restricciones: usa SOLO las tecnologías del ADR-001 y `despliegue.py`; no confundas contenedor C4 con contenedor Docker; usa `!identifiers hierarchical`.
+* **Propuesta de la IA:** Generó un primer borrador de `workspace.dsl` donde incluyó a `Nginx Proxy` y `Grafana` como contenedores de negocio del Nivel 2, y puso a `WhatsApp Business API` dentro del bloque `softwareSystem "San Camilo en Línea"`.
+* **Verificación del equipo:** Se revisó con la guía del Paso 2 (Tabla 7). `WhatsApp Business API` es un sistema externo que no construimos; además, `Nginx` es infraestructura de red del VPS y no un contenedor de aplicación del MVP de 1 mes.
+* **Decisión:** **Corregida.** Se movió `WhatsApp Business API` fuera del sistema con el tag `"Externo"`, y se trasladó `Nginx` a la descripción del nodo de despliegue en `deploymentEnvironment "Producción"`, dejando en Nivel 2 únicamente los 5 contenedores reales (`PWA`, `Backend API`, `Worker Celery`, `PostgreSQL` y `Redis`).
+
+---
+
+### Interacción 2: Modelado de Componentes (Nivel 3) y detección de discrepancia entre Lab 04 y Lab 05
+* **Fecha:** 2026-10-14
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Revisa nuestro `001-estilo-arquitectonico.md` (Lab 04) frente a `paquetes.puml` (Lab 05) para generar los componentes de `sancamilo.api` en `workspace.dsl`. Verifica que no existan ciclos de dependencia.
+* **Propuesta de la IA:** La IA advirtió que el texto del `ADR-001` mencionaba el módulo *"Envíos"*, mientras que el diagrama `paquetes.puml` del Lab 05 definía los paquetes `catalogo`, `pedidos`, `pagos`, `notificaciones`, `reportes` y `compartido`. Propuso usar los 6 paquetes de `paquetes.puml` y actualizar el texto del `ADR-001`.
+* **Verificación del equipo:** Confirmamos que en el Lab 05 la gestión de estado de entrega quedó integrada dentro de `pedidos` y se añadieron `reportes` (solo lectura) y `compartido`.
+* **Decisión:** **Aceptada y aplicada.** Se actualizaron los módulos listados en `docs/architecture/adr/001-estilo-arquitectonico.md` para mantener trazabilidad 1:1 con `paquetes.puml` y con la vista `component` de `workspace.dsl`, verificando que `pagos` no dependa de `pedidos`.
+
+---
+
+### Interacción 3: Traducción del Diagrama de Secuencia UML a Vista Dinámica C4 (E4)
+* **Fecha:** 2026-10-15
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > A partir de `secuencia-confirmar-pagar.puml`, genera la vista `dynamic sancamilo.api "ConfirmarYPagar"` en Structurizr DSL. Asegúrate de que cada paso utilice únicamente relaciones estáticas ya declaradas en el bloque `model`.
+* **Propuesta de la IA:** En su primer intento, la IA incluyó un paso `sancamilo.api.pedidos -> yape "Cobra con Yape"` y un bloque condicional `alt` dentro de la vista `dynamic`.
+* **Verificación del equipo:** Al pasar `structurizr validate`, falló porque `alt` no es sintaxis válida en Structurizr DSL y porque quien se relaciona con `yape` en el modelo estático es `sancamilo.api.pagos` (mediante `PasarelaPago`), no `pedidos` directamente.
+* **Decisión:** **Corregida.** Se eliminó la sintaxis UML y se enrutó el cobro correctamente en dos pasos: `sancamilo.api.pedidos -> sancamilo.api.pagos` y `sancamilo.api.pagos -> yape`, pasando la validación sin errores.
+
+---
+
+### Interacción 4: Estructuración del Entorno de Despliegue según Restricciones R-03 y R-04 (E5)
+* **Fecha:** 2026-10-15
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Genera el bloque `deploymentEnvironment "Producción"` para `workspace.dsl` basándote en `despliegue.py` y en las restricciones R-03 (VPS único económico) y R-04 (dispositivos móviles gama baja con red 3G) de `drivers.md`.
+* **Propuesta de la IA:** Inicialmente propuso desplegar la base de datos en `AWS RDS` y la aplicación en un clúster `AWS ECS Fargate`.
+* **Verificación del equipo:** Esto contradecía directamente la restricción `R-03` de `drivers.md` (*"servidor VPS económico de un solo nodo para el MVP"*) y `despliegue.py`.
+* **Decisión:** **Rechazada y corregida.** Se reemplazó por un nodo `Servidor VPS en la Nube (Único Nodo - R-03)` con `Ubuntu 24.04 LTS (2 vCPU, 4 GB RAM)` que aloja un nodo hijo `Docker Compose` con las instancias de `api`, `worker`, `db` y `cola`, más el nodo del dispositivo móvil del usuario para la `pwa`.
+
+---
+
+### Interacción 5: Auditoría de las 5 vistas exportadas con la lista oficial C4 (Prompt IA 2 - E7)
+* **Fecha:** 2026-10-16
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt (Prompt IA 2 de la guía):**
+  > Actúa como revisor de diagramas de arquitectura. Evalúa estas vistas exportadas de un modelo C4 [se adjuntaron los 5 archivos `.puml` de `export/`] con la lista de revisión de c4model.com: generales, elementos y relaciones. Responde en una tabla (vista, pregunta de la lista, cumple sí/no, evidencia, corrección sugerida). No inventes problemas: si algo cumple, indícalo.
+* **Propuesta de la IA:** Confirmó el cumplimiento de títulos, leyendas, tecnologías y formas, pero señaló como supuestos defectos que en la vista de Contexto faltaban protocolos `[HTTPS]` en las flechas de las Personas y que en Componentes las llamadas internas no indicaban protocolo HTTP/REST.
+* **Verificación del equipo:** Contrastamos ambos puntos con la teoría de Simon Brown (`c4model.com`) y el `ADR-001`: en Nivel 1 no se colocan protocolos técnicos en las relaciones de usuario, y en un Monolito Modular los componentes se invocan en memoria dentro del mismo proceso Python.
+* **Decisión:** **Documentados como Falsos Positivos en `revision-c4.md`.** Se conservaron las vistas tal como estaban por ser arquitectónicamente correctas.
+
+---
+
+### Interacción 6: Redacción del resumen para público no técnico (Prompt IA 3 - E7)
+* **Fecha:** 2026-10-16
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt (Prompt IA 3 adaptado):**
+  > Explica el siguiente diagrama de contexto al presidente de la Junta de Comerciantes del Mercado San Camilo, que no es técnico, en máximo 120 palabras: qué hace el sistema, quién lo usa y de qué servicios externos depende. Evita la jerga técnica. [Se adjuntó `Structurizr-Contexto.puml`].
+* **Propuesta de la IA:** Redactó un texto claro de 115 palabras, pero mencionaba que el sistema *"también acepta pagos con Plin y tarjetas de crédito"*.
+* **Verificación del equipo:** Aunque Plin aparece en `drivers.md` como escenario futuro de modificabilidad (QA-03), en el MVP actual y en el modelo C4 solo está integrada la pasarela **Yape** (RF-03).
+* **Decisión:** **Corregida.** Se editó `explicacion.md` dejando únicamente **Yape** y **WhatsApp** para que el texto (108 palabras) sea 100% fiel al modelo C4 construido.
