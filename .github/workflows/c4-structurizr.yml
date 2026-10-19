@@ -1,0 +1,34 @@
+name: Validar y Exportar Modelo C4 (Structurizr)
+
+on:
+  push:
+    branches: [ main, "feat/**" ]
+    paths:
+      - "docs/architecture/c4/**"
+      - ".github/workflows/c4-structurizr.yml"
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-render-c4:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar workspace.dsl con Structurizr CLI
+        run: |
+          docker run --rm -v "$PWD":/usr/local/structurizr structurizr/cli validate \
+            -w docs/architecture/c4/workspace.dsl
+
+      - name: Exportar vistas a C4-PlantUML y Mermaid
+        run: |
+          docker run --rm -v "$PWD":/usr/local/structurizr structurizr/cli export \
+            -w docs/architecture/c4/workspace.dsl -f plantuml/c4plantuml -o docs/architecture/c4/export
+          docker run --rm -v "$PWD":/usr/local/structurizr structurizr/cli export \
+            -w docs/architecture/c4/workspace.dsl -f mermaid -o docs/architecture/c4/export
+
+      - name: Generar imagenes PNG con PlantUML
+        run: |
+          docker run --rm -v "$PWD":/data plantuml/plantuml -tpng -o ../img /data/docs/architecture/c4/export/*.puml
+          docker run --rm -v "$PWD":/data plantuml/plantuml -tpng -o img /data/docs/architecture/c4/contexto-manual.puml
