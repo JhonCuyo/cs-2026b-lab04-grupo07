@@ -234,13 +234,13 @@ Refactorización hacia patrones de diseño GoF asistida por IA sobre el flujo cr
 ### 3. Artefactos y Diagramas del Laboratorio 07
 * [Detección de olores y decisiones (`olores.md`)](docs/design/patrones/olores.md)
 * [Métricas detalladas y análisis de trade-off (`metricas.md`)](docs/design/patrones/metricas.md)
-* [Bitácora de interacciones con IA (`bitacora-ia.md`)](docs/design/patrones/bitacora-ia.md)
-* [ADR-005: Patrones de diseño en el módulo Pedidos (`005-patrones-de-diseno.md`)](docs/architecture/adr/005-patrones-de-diseno.md)
+* [Bitácora de interacciones con IA (`bitacora-ia.md`)](docs/design/bitacora-ia.md)
+* [ADR-005: Patrones de diseño en el módulo Pedidos (`005-patrones-de-diseno.md`)](docs/architecture/adr/004-patrones-de-diseno.md)
 * **Diagramas PlantUML por patrón:**
-  * [Pagos: Strategy + Adapter + Decorator + Factory](docs/design/patrones/img/pagos-patrones.png)
-  * [Ciclo de vida: Patrón State](docs/design/patrones/img/estados-state.png)
-  * [Notificaciones multipuesto: Patrón Observer](docs/design/patrones/img/eventos-observer.png)
-  * [IA Aislada: Strategy + Adapter + Decorator + Chain of Responsibility](docs/design/patrones/img/ia-patrones.png)
-  * [Diagrama de Clases General Actualizado (Lab 05 $\rightarrow$ Lab 07)](docs/design/clases.png)
+  * [Pagos: Strategy + Adapter + Decorator + Factory](img/pagos-patrones.png)
+  * [Ciclo de vida: Patrón State](img/estados-state.png)
+  * [Notificaciones multipuesto: Patrón Observer](img/eventos-observer.png)
+  * [IA Aislada: Strategy + Adapter + Decorator + Chain of Responsibility](img/ia-patrones.png)
+  * [Diagrama de Clases General Actualizado (Lab 05 -> Lab 07)](img/clases.png)
 
 ---
