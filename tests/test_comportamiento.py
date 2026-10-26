@@ -5,7 +5,7 @@ import pytest
 from src.pedidos.externos import YapeSDK, PlinClient, ClienteLLMFalso
 
 
-@pytest.fixture(params=["src.pedidos.antes.servicio"])
+@pytest.fixture(params=["src.pedidos.antes.servicio", "src.pedidos.servicio"])
 def m(request):
     return importlib.import_module(request.param)
 
