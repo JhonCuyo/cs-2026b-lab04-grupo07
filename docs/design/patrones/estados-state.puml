@@ -1,0 +1,58 @@
+@startuml estados-state
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title San Camilo en Línea — Ciclo de Vida del Pedido Multipuesto: Patrón State
+
+class Pedido <<contexto>> {
+  +id: int
+  +celular: str
+  +modalidad: str
+  +operacion: str
+  -_estado: EstadoPedido
+  +estado: str
+  +confirmar(): void
+  +pagar(operacion: str): void
+  +cancelar(): void
+  +cambiar_a(nuevo: EstadoPedido): void
+}
+
+abstract class EstadoPedido <<State>> {
+  +nombre: str
+  +confirmar(pedido: Pedido): void
+  +pagar(pedido: Pedido, operacion: str): void
+  +cancelar(pedido: Pedido): void
+}
+
+class Borrador <<ConcreteState>> {
+  +nombre = "BORRADOR"
+  +confirmar(pedido: Pedido): void
+  +cancelar(pedido: Pedido): void
+}
+
+class Confirmado <<ConcreteState>> {
+  +nombre = "CONFIRMADO"
+  +pagar(pedido: Pedido, operacion: str): void
+  +cancelar(pedido: Pedido): void
+}
+
+class Pagado <<ConcreteState>> {
+  +nombre = "PAGADO"
+}
+
+class Cancelado <<ConcreteState>> {
+  +nombre = "CANCELADO"
+}
+
+Pedido o--> "1" EstadoPedido : _estado actual
+EstadoPedido <|-- Borrador
+EstadoPedido <|-- Confirmado
+EstadoPedido <|-- Pagado
+EstadoPedido <|-- Cancelado
+
+note right of EstadoPedido
+  Por defecto todos los métodos lanzan ValueError.
+  Cada subclase redefine SOLO las transiciones
+  válidas de la máquina de estados del Lab 05.
+end note
+@enduml

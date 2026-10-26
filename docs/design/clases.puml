@@ -5,98 +5,154 @@ skinparam defaultFontName Arial
 skinparam class BackgroundColor #EEF2F8
 skinparam classBorderColor #1A3A5C
 
-title San Camilo en Línea - Módulos Pedidos y Pagos (Diseño E1)
+title San Camilo en Línea - Diagrama de Clases (Refactorizado Lab 07 con Patrones GoF)
 
-class Comprador {
-  - id: UUID
-  - nombre: String
-  - celular: String
-  - direccion: String
+package "Dominio y Ciclo de Vida (Patrón State)" {
+  class Comprador {
+    - id: UUID
+    - nombre: String
+    - celular: String
+  }
+
+  class Puesto {
+    - id: UUID
+    - numeroPuesto: String
+    - nombreComerciante: String
+  }
+
+  class Producto {
+    - id: UUID
+    - nombre: String
+    - precioUnitario: Decimal
+  }
+
+  class PedidoMultipuesto {
+    - id: UUID
+    - celular: String
+    - modalidad: String
+    - operacion: String
+    - _estado: EstadoPedido
+    + subtotal(): Decimal
+    + total(): Decimal
+    + confirmar(): void
+    + pagar(operacion: String): void
+    + cancelar(): void
+    + puestosInvolucrados(): List<String>
+  }
+
+  class LineaPedido {
+    - cantidad: int
+    - precioUnitario: Decimal
+    - puesto: String
+    + subtotal(): Decimal
+  }
+
+  class PedidoPuesto {
+    - id: UUID
+    - estadoPuesto: EstadoPedidoPuesto
+    + marcarListo(): void
+  }
+
+  abstract class EstadoPedido <<State>> {
+    + nombre: String
+    + confirmar(p: PedidoMultipuesto): void
+    + pagar(p: PedidoMultipuesto, op: String): void
+    + cancelar(p: PedidoMultipuesto): void
+  }
+
+  class Borrador <<ConcreteState>>
+  class Confirmado <<ConcreteState>>
+  class Pagado <<ConcreteState>>
+  class Cancelado <<ConcreteState>>
+
+  enum EstadoPedidoPuesto {
+    RECIBIDO
+    LISTO
+    RECOGIDO
+  }
 }
 
-class Puesto {
-  - id: UUID
-  - numeroPuesto: String
-  - nombreComerciante: String
-  - celular: String
+package "Módulo Pagos (Strategy + Adapter + Decorator + Factory)" {
+  class FabricaPasarelas <<Factory>> {
+    + registrar(medio: String, creador: Callable): void
+    + crear(medio: String): PasarelaPago
+  }
+
+  interface PasarelaPago <<Strategy>> {
+    + cobrar(monto: Decimal, celular: String): ResultadoPago
+  }
+
+  class ResultadoPago <<ValueObject>> {
+    + aprobado: bool
+    + operacion: String
+  }
+
+  class YapeAdapter <<Adapter>> {
+    + cobrar(monto: Decimal, celular: String): ResultadoPago
+  }
+
+  class PlinAdapter <<Adapter>> {
+    + cobrar(monto: Decimal, celular: String): ResultadoPago
+  }
+
+  class ConReintentos <<Decorator>> {
+    - intentos: int
+    + cobrar(monto: Decimal, celular: String): ResultadoPago
+  }
 }
 
-class Producto {
-  - id: UUID
-  - nombre: String
-  - precioUnitario: Decimal
-  - stockDisponible: int
-  + reservar(cantidad: int): void
-  + liberar(cantidad: int): void
+package "Módulo Eventos / Notificaciones (Patrón Observer)" {
+  class PublicadorEventos <<Publisher>> {
+    + suscribir(evento: String, s: Suscriptor): void
+    + publicar(evento: String, datos: Dict): void
+  }
+
+  interface Suscriptor <<Observer>> {
+    + actualizar(evento: String, datos: Dict): void
+  }
+
+  class NotificadorWhatsAppComerciantes <<ConcreteObserver>> {
+    + actualizar(evento: String, datos: Dict): void
+  }
+
+  class ActualizadorReportes <<ConcreteObserver>> {
+    + actualizar(evento: String, datos: Dict): void
+  }
 }
 
-class PedidoMultipuesto {
-  - id: UUID
-  - fecha: DateTime
-  - total: Decimal
-  - estado: EstadoPedido
-  + agregarLinea(producto: Producto, cantidad: int): void
-  + calcularTotal(): Decimal
-  + confirmar(): void
-  + registrarPago(pago: Pago): void
-  + cancelar(motivo: String): void
+package "Módulo IA de Catálogo (Strategy + Adapter + Decorator + Chain)" {
+  class NormalizadorProductos {
+    + normalizar(textoCrudo: String): String
+  }
+
+  interface ProveedorLLM <<Strategy>> {
+    + completar(prompt: String): String
+  }
+
+  class LocalLlamaAdapter <<Adapter>> {
+    + completar(prompt: String): String
+  }
+
+  class ConCache <<Decorator>> {
+    + completar(prompt: String): String
+  }
+
+  abstract class Guardrail <<Chain>> {
+    + validar(texto: String): String
+    # _aplicar(texto: String): String
+  }
+
+  class SinPreciosInfiltrados <<ConcreteHandler>>
+  class SinAfirmacionesMedicas <<ConcreteHandler>>
+  class LongitudMaximaCatalogo <<ConcreteHandler>>
 }
 
-class LineaPedido {
-  - cantidad: int
-  - precioUnitario: Decimal
-  + subtotal(): Decimal
-}
-
-class PedidoPuesto {
-  - id: UUID
-  - estadoPuesto: EstadoPedidoPuesto
-  + marcarListo(): void
-}
-
-class Pago {
-  - id: UUID
-  - monto: Decimal
-  - medio: MedioPago
-  - codigoOperacion: String
-  - aprobado: bool
-}
-
-enum EstadoPedido {
-  BORRADOR
-  CONFIRMADO
-  PAGO_PENDIENTE
-  PAGADO
-  EN_PREPARACION
-  ENTREGADO
-  CANCELADO
-}
-
-enum EstadoPedidoPuesto {
-  RECIBIDO
-  LISTO
-  RECOGIDO
-}
-
-enum MedioPago {
-  YAPE
-  PLIN
-}
-
-interface PasarelaPago <<puerto>> {
-  + cobrar(monto: Decimal, celular: String): Pago
-}
-
-class YapeAdapter <<adaptador>> {
-  + cobrar(monto: Decimal, celular: String): Pago
-}
-
-class PlinAdapter <<adaptador>> {
-  + cobrar(monto: Decimal, celular: String): Pago
-}
-
-class ServicioPedidos <<servicio>> {
-  + confirmarYPagar(pedidoId: UUID, medio: MedioPago): PedidoMultipuesto
+class ServicioPedidos <<Servicio>> {
+  + fabrica: FabricaPasarelas
+  + publicador: PublicadorEventos
+  + normalizador: NormalizadorProductos
+  + confirmarYPagar(pedido: PedidoMultipuesto, medio: String): String
+  + normalizarProducto(textoCrudo: String): String
 }
 
 interface RepositorioPedidos <<puerto>> {
@@ -104,30 +160,50 @@ interface RepositorioPedidos <<puerto>> {
   + guardar(p: PedidoMultipuesto): void
 }
 
-interface Notificador <<puerto>> {
-  + notificarNuevoPedido(p: PedidoMultipuesto): void
-}
-
-' Relaciones y multiplicidades
+' Relaciones de Dominio y Estado
 Comprador "1" -- "0..*" PedidoMultipuesto : realiza >
 PedidoMultipuesto "1" *-- "1..*" LineaPedido
 LineaPedido "0..*" --> "1" Producto
 Puesto "1" -- "0..*" Producto : ofrece >
-
 PedidoMultipuesto "1" *-- "1..*" PedidoPuesto
 PedidoPuesto "0..*" --> "1" Puesto
-
-PedidoMultipuesto "1" o-- "0..1" Pago
-PedidoMultipuesto --> EstadoPedido
 PedidoPuesto --> EstadoPedidoPuesto
-Pago --> MedioPago
 
-PasarelaPago <|.. YapeAdapter : realiza
-PasarelaPago <|.. PlinAdapter : realiza
+PedidoMultipuesto o--> "1" EstadoPedido : _estado
+EstadoPedido <|-- Borrador
+EstadoPedido <|-- Confirmado
+EstadoPedido <|-- Pagado
+EstadoPedido <|-- Cancelado
 
-ServicioPedidos ..> PedidoMultipuesto
-ServicioPedidos ..> RepositorioPedidos
-ServicioPedidos ..> PasarelaPago
-ServicioPedidos ..> Notificador
+' Relaciones de Pagos
+PasarelaPago <|.. YapeAdapter
+PasarelaPago <|.. PlinAdapter
+PasarelaPago <|.. ConReintentos
+ConReintentos o--> PasarelaPago : _interna
+FabricaPasarelas ..> PasarelaPago : crea
+PasarelaPago ..> ResultadoPago : retorna
+
+' Relaciones de Eventos
+PublicadorEventos o--> "*" Suscriptor
+Suscriptor <|.. NotificadorWhatsAppComerciantes
+Suscriptor <|.. ActualizadorReportes
+
+' Relaciones de IA
+NormalizadorProductos --> ProveedorLLM
+NormalizadorProductos --> Guardrail
+ProveedorLLM <|.. LocalLlamaAdapter
+ProveedorLLM <|.. ConCache
+ConCache o--> ProveedorLLM : _interno
+Guardrail o--> "0..1" Guardrail : _siguiente
+Guardrail <|-- SinPreciosInfiltrados
+Guardrail <|-- SinAfirmacionesMedicas
+Guardrail <|-- LongitudMaximaCatalogo
+
+' Relaciones del Servicio Principal
+ServicioPedidos --> PedidoMultipuesto
+ServicioPedidos --> RepositorioPedidos
+ServicioPedidos --> FabricaPasarelas
+ServicioPedidos --> PublicadorEventos
+ServicioPedidos --> NormalizadorProductos
 
 @enduml

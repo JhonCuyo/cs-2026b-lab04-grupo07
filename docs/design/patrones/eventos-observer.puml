@@ -1,0 +1,35 @@
+@startuml eventos-observer
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title San Camilo en Línea — Notificaciones Multipuesto y Reportes: Patrón Observer
+
+class ServicioPedidos <<cliente>> {
+  +confirmar_y_pagar(pedido: Pedido, medio: str): str
+}
+
+class PublicadorEventos <<Subject / Publisher>> {
+  -_suscriptores: dict[str, list<Suscriptor>]
+  +suscribir(evento: str, suscriptor: Suscriptor): void
+  +publicar(evento: str, datos: dict): void
+}
+
+interface Suscriptor <<Observer>> {
+  +{abstract} actualizar(evento: str, datos: dict): void
+}
+
+class NotificadorWhatsAppComerciantes <<ConcreteObserver>> {
+  -_bandeja: list[str]
+  +actualizar(evento: str, datos: dict): void
+}
+
+class ActualizadorReportes <<ConcreteObserver>> {
+  -_bandeja: list[str]
+  +actualizar(evento: str, datos: dict): void
+}
+
+ServicioPedidos --> PublicadorEventos : publica "pedido_pagado"
+PublicadorEventos o--> "*" Suscriptor : notifica
+Suscriptor <|.. NotificadorWhatsAppComerciantes
+Suscriptor <|.. ActualizadorReportes
+@enduml

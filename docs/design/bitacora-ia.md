@@ -196,3 +196,74 @@ Registro de interacciones con IA generativa siguiendo la regla de oro: *"La IA p
 * **Propuesta de la IA:** Redactó un texto claro de 115 palabras, pero mencionaba que el sistema *"también acepta pagos con Plin y tarjetas de crédito"*.
 * **Verificación del equipo:** Aunque Plin aparece en `drivers.md` como escenario futuro de modificabilidad (QA-03), en el MVP actual y en el modelo C4 solo está integrada la pasarela **Yape** (RF-03).
 * **Decisión:** **Corregida.** Se editó `explicacion.md` dejando únicamente **Yape** y **WhatsApp** para que el texto (108 palabras) sea 100% fiel al modelo C4 construido.
+
+
+# Bitácora de Uso de IA — Laboratorio 07 (Patrones de Diseño GoF)
+
+Registro auditable bajo la regla de oro: *"La IA propone, el equipo decide y verifica con pruebas y métricas"*.
+
+---
+
+### Interacción 1: Detección de olores de código y selección de patrones (Prompt IA 1)
+* **Fecha:** 2026-10-24
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Actúa como revisor de código experto en refactorización (Fowler) y patrones GoF. Contexto: Adjunto `src/pedidos/antes/servicio.py` y la salida de `radon cc -s -a` (complejidad 16 en `confirmar_y_pagar`). Tarea: identifica los olores de código. Para cada uno indica: líneas, olor, el patrón GoF que lo resolvería (o "ninguno" si no se justifica), el principio SOLID que mejora y el COSTO de aplicarlo. Restricciones: no escribas código todavía; no propongas patrones sin un olor concreto; no uses Singleton. Formato: tabla Markdown.
+* **Propuesta de la IA:** Identificó 6 olores válidos (condicionales por pasarela y tarifa, acoplamiento a SDKs de Yape/Plin, bucle de reintentos duplicado, condicionales sobre `pedido.estado`, armado manual de avisos WhatsApp/reportes y validaciones de IA mezcladas), pero además sugirió hacer `FabricaPasarelas` un `Singleton` y usar `Abstract Factory` para familias regionales de pagos.
+* **Verificación del equipo:** Evaluamos cada propuesta contra `drivers.md` y el plazo de 1 mes (`R-01`). `Singleton` acopla el estado entre tests de `pytest` y `Abstract Factory` es sobreingeniería (*patternitis*) porque el Mercado San Camilo opera solo en Arequipa.
+* **Decisión:** **6 propuestas aceptadas y 2 rechazadas (`Singleton` y `Abstract Factory`).** Documentado en `docs/design/patrones/olores.md`.
+
+---
+
+### Interacción 2: Refactor de pagos con Strategy + Adapter + Decorator + Factory (Error detectado por las pruebas)
+* **Fecha:** 2026-10-24
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt (Prompt IA 2):**
+  > Aplica ÚNICAMENTE los patrones Strategy + Adapter + Decorator (`ConReintentos`) + Factory al cobro en `servicio.py`. Reglas: (1) no cambies el comportamiento observable; las pruebas de `test_comportamiento.py` deben seguir pasando; (2) no introduzcas Singleton ni estado global; (3) muestra los archivos completos.
+* **Propuesta de la IA:** Generó `pagos.py`, pero en `ConReintentos.cobrar()` escribió una condición `if not resultado.aprobado: continue`, haciendo que el decorador reintentara 3 veces también cuando el pago era rechazado por saldo insuficiente o límite excedido (y no solo ante `TimeoutError`).
+* **Verificación del equipo (Detección por pruebas):** Al correr `pytest`, la prueba `test_05_monto_sobre_limite_cancela_sin_reintentar` **falló en rojo** (`AssertionError: assert yape.llamadas == 1`, dio `3`). En producción esto habría generado bloqueos de cuenta o cobros triplicados.
+* **Decisión:** **Corregida.** Se eliminó el reintento sobre `not resultado.aprobado` y se restringió exclusivamente al bloque `except TimeoutError: continue`, volviendo a pasar las pruebas en verde.
+
+---
+
+### Interacción 3: Refactor del ciclo de vida del pedido hacia el patrón State (E3)
+* **Fecha:** 2026-10-24
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Reemplaza los condicionales sobre `pedido.estado` implementando el patrón State en `src/pedidos/estados.py` de acuerdo con la máquina de estados del Lab 05 (`BORRADOR`, `CONFIRMADO`, `PAGADO`, `CANCELADO`). La clase base debe prohibir todas las transiciones por defecto.
+* **Propuesta de la IA:** Primero propuso una tabla de transiciones basada en un diccionario `TRANSICIONES = {("BORRADOR", "CONFIRMADO"): True}` dentro de la clase `Pedido` en lugar de clases de estado polimórficas.
+* **Verificación del equipo:** Aunque el diccionario es compacto, no encapsula la regla de negocio específica de cada estado (por ejemplo, `Borrador.confirmar()` debe verificar que `pedido.lineas` no esté vacío, y los estados `Pagado` y `Cancelado` emiten mensajes de dominio específicos).
+* **Decisión:** **Rechazada la tabla y reemplazada por clases `EstadoPedido` (`State`).** Se implementaron `Borrador`, `Confirmado`, `Pagado` y `Cancelado`, descubriendo además que en la versión `antes` si se pasaba un medio de pago inválido después de cambiar a `CONFIRMADO`, el estado quedaba corrupto; al mover `self.fabrica.crear(medio)` antes de `pedido.confirmar()`, `test_08` pasa limpio en ambas versiones.
+
+---
+
+### Interacción 4: Desacoplamiento de notificaciones multipuesto con Observer (E4)
+* **Fecha:** 2026-10-24
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Extrae el envío de avisos de WhatsApp por puesto del mercado y el registro de reportes desde `confirmar_y_pagar` hacia el patrón Observer en `src/pedidos/eventos.py`.
+* **Propuesta de la IA:** Creó `PublicadorEventos`, pero hizo que `NotificadorWhatsAppComerciantes` recibiera el objeto `Pedido` completo acoplándose a la estructura interna de `Linea`.
+* **Verificación del equipo:** Revisamos que el evento `"pedido_pagado"` sea un diccionario de datos desacoplado (`{"id", "celular", "total", "puestos"}`) calculado por `pedido.puestos_involucrados()`.
+* **Decisión:** **Aceptada con ajuste de bajo acoplamiento.** Se verificó creando un tercer suscriptor (`NotificadorRepartidor`) en `test_patrones.py` sin tocar `ServicioPedidos`.
+
+---
+
+### Interacción 5: Aislamiento del normalizador de productos con IA y Guardrails (E5)
+* **Fecha:** 2026-10-24
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Diseña `src/pedidos/ia.py` para aislar la función de IA de San Camilo en Línea (normalizar nombres de productos escritos por comerciantes) usando Strategy/Adapter (`ProveedorLLM`), Decorator (`ConCache`) y Chain of Responsibility (`Guardrail`).
+* **Propuesta de la IA:** Propuso implementar los guardrails haciendo una segunda llamada al LLM con el prompt *"Verifica si la respuesta anterior contiene precios o promesas médicas"* (patrón LLM-as-a-Judge).
+* **Verificación del equipo:** Usar otro LLM para validar duplica la latencia en redes 3G (`QA-02`), duplica el costo y sigue siendo no determinista. Para validar precios (`S/`), palabras prohibidas y longitud ($\le 60$ caracteres), las reglas deterministas en Python son instantáneas y 100% predecibles.
+* **Decisión:** **Rechazado el LLM-Juez; implementada cadena determinista `SinPreciosInfiltrados -> SinAfirmacionesMedicas -> LongitudMaximaCatalogo`.**
+
+---
+
+### Interacción 6: Generación de diagramas PlantUML y verificación cruzada con `pyreverse` (E7)
+* **Fecha:** 2026-10-24
+* **Herramienta:** Gemini / Asistente IA
+* **Prompt:**
+  > Genera los diagramas de clases PlantUML para los patrones aplicados (`pagos-patrones.puml`, `estados-state.puml`, `eventos-observer.puml`, `ia-patrones.puml`) con estereotipos del rol y actualiza `docs/design/clases.puml`.
+* **Propuesta de la IA:** Generó los archivos `.puml`, pero en el diagrama de IA llamó al método `validar_salida()` en lugar de `validar()` y a `LocalAdapter` en vez de `LocalLlamaAdapter`.
+* **Verificación del equipo:** Ejecutamos `pyreverse -o puml src/pedidos/` y comparamos los nombres reales de clases y métodos contra los diagramas propuestos.
+* **Decisión:** **Corregidos los nombres en los archivos `.puml`** para coincidir exactamente con el código fuente y renderizados los PNG en `docs/design/patrones/img/`.

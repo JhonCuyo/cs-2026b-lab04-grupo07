@@ -1,0 +1,60 @@
+@startuml ia-patrones
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title San Camilo en Línea — IA Aislada: Strategy + Adapter + Decorator + Chain of Responsibility
+
+class NormalizadorProductos <<cliente>> {
+  +normalizar(texto_crudo: str): str
+}
+
+interface ProveedorLLM <<Strategy>> {
+  +{abstract} completar(prompt: str): str
+}
+
+class LocalLlamaAdapter <<Adapter>> {
+  -_cliente: ClienteLLMFalso
+  +completar(prompt: str): str
+}
+
+class ConCache <<Decorator>> {
+  -_interno: ProveedorLLM
+  -_cache: dict[str, str]
+  +completar(prompt: str): str
+}
+
+abstract class Guardrail <<Handler>> {
+  -_siguiente: Guardrail
+  +validar(texto: str): str
+  #{abstract} _aplicar(texto: str): str
+}
+
+class SinPreciosInfiltrados <<ConcreteHandler>> {
+  #_aplicar(texto: str): str
+}
+
+class SinAfirmacionesMedicas <<ConcreteHandler>> {
+  +PROHIBIDAS: tuple
+  #_aplicar(texto: str): str
+}
+
+class LongitudMaximaCatalogo <<ConcreteHandler>> {
+  +max_chars: int = 60
+  #_aplicar(texto: str): str
+}
+
+NormalizadorProductos --> ProveedorLLM : consulta
+NormalizadorProductos --> Guardrail : valida salida (1er eslabón)
+ProveedorLLM <|.. LocalLlamaAdapter
+ProveedorLLM <|.. ConCache
+ConCache o--> ProveedorLLM : envuelve (_interno)
+Guardrail o--> "0..1" Guardrail : _siguiente
+Guardrail <|-- SinPreciosInfiltrados
+Guardrail <|-- SinAfirmacionesMedicas
+Guardrail <|-- LongitudMaximaCatalogo
+
+note bottom of Guardrail
+  Cadena determinista de validación:
+  SinPreciosInfiltrados -> SinAfirmacionesMedicas -> LongitudMaximaCatalogo
+end note
+@enduml
