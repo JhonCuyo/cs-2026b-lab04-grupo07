@@ -1,0 +1,66 @@
+@startuml pagos-patrones
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+title San Camilo en Línea — Pagos: Strategy + Adapter + Decorator + Factory
+
+class ServicioPedidos <<cliente>> {
+  +confirmar_y_pagar(pedido: Pedido, medio: str): str
+}
+
+class FabricaPasarelas <<Factory>> {
+  -_creadores: dict
+  +registrar(medio: str, creador: callable): void
+  +crear(medio: str): PasarelaPago
+}
+
+interface PasarelaPago <<Strategy>> {
+  +{abstract} cobrar(monto: float, celular: str): ResultadoPago
+}
+
+class ResultadoPago <<ValueObject>> {
+  +aprobado: bool
+  +operacion: str
+}
+
+class YapeAdapter <<Adapter>> {
+  -_sdk: YapeSDK
+  +cobrar(monto: float, celular: str): ResultadoPago
+}
+
+class PlinAdapter <<Adapter>> {
+  -_cliente: PlinClient
+  +cobrar(monto: float, celular: str): ResultadoPago
+}
+
+class ConReintentos <<Decorator>> {
+  -_interna: PasarelaPago
+  -_intentos: int = 3
+  +cobrar(monto: float, celular: str): ResultadoPago
+}
+
+class YapeSDK <<externo>> {
+  +realizar_cobro(telefono: str, soles: float): dict
+}
+
+class PlinClient <<externo>> {
+  +charge(amount_cents: int, phone: str): tuple
+}
+
+ServicioPedidos --> FabricaPasarelas : pide pasarela
+ServicioPedidos ..> PasarelaPago : usa
+FabricaPasarelas ..> PasarelaPago : instancia y envuelve
+PasarelaPago <|.. YapeAdapter
+PasarelaPago <|.. PlinAdapter
+PasarelaPago <|.. ConReintentos
+ConReintentos o--> PasarelaPago : envuelve (_interna)
+YapeAdapter --> YapeSDK : traduce (soles/dict)
+PlinAdapter --> PlinClient : traduce (céntimos/tupla)
+PasarelaPago ..> ResultadoPago : retorna
+
+note right of ConReintentos
+  Reintenta hasta 3 veces
+  únicamente ante TimeoutError
+  (redes móviles 3G - R-04).
+end note
+@enduml
