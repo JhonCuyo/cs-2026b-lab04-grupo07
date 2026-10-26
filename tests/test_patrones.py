@@ -26,3 +26,19 @@ def test_e2_open_closed_nueva_pasarela_sin_modificar_servicio():
 
     assert estado == "PAGADO"
     assert pedido.operacion == "CULQI-25"
+
+def test_e3_state_impide_pagar_sin_confirmar_o_cancelar_un_pedido_pagado():
+    pedido = crear_pedido_base()
+    # No se puede pagar directamente desde BORRADOR sin confirmar primero
+    with pytest.raises(ValueError, match="No se puede pagar un pedido en estado BORRADOR"):
+        pedido.pagar("YAPE-100")
+
+    # Flujo válido: BORRADOR -> CONFIRMADO -> PAGADO
+    pedido.confirmar()
+    assert pedido.estado == "CONFIRMADO"
+    pedido.pagar("YAPE-2500")
+    assert pedido.estado == "PAGADO"
+
+    # Una vez PAGADO no se puede cancelar ni volver a pagar
+    with pytest.raises(ValueError, match="No se puede cancelar un pedido en estado PAGADO"):
+        pedido.cancelar()

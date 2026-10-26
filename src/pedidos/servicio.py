@@ -1,7 +1,8 @@
-"""Servicio de Pedidos refactorizado (evolución E2 -> E5)."""
+"""Servicio de Pedidos con Patrón State integrado (E3)."""
 
 from dataclasses import dataclass, field
 from src.pedidos.externos import YapeSDK, PlinClient, ClienteLLMFalso
+from src.pedidos.estados import EstadoPedido, Borrador, MAPA_ESTADOS
 from src.pedidos.pagos import (
     FabricaPasarelas,
     YapeAdapter,
@@ -18,14 +19,38 @@ class Linea:
     puesto: str = "Puesto General"
 
 
-@dataclass
 class Pedido:
-    id: int
-    celular: str
-    lineas: list[Linea] = field(default_factory=list)
-    modalidad: str = "RECOJO"
-    estado: str = "BORRADOR"
-    operacion: str | None = None
+    def __init__(
+        self,
+        id: int,
+        celular: str,
+        lineas: list[Linea] | None = None,
+        modalidad: str = "RECOJO",
+        estado: str = "BORRADOR",
+        operacion: str | None = None,
+    ):
+        self.id = id
+        self.celular = celular
+        self.lineas = lineas if lineas is not None else []
+        self.modalidad = modalidad
+        self.operacion = operacion
+        self._estado: EstadoPedido = MAPA_ESTADOS.get(estado, Borrador)()
+
+    @property
+    def estado(self) -> str:
+        return self._estado.nombre
+
+    def cambiar_a(self, nuevo_estado: EstadoPedido) -> None:
+        self._estado = nuevo_estado
+
+    def confirmar(self) -> None:
+        self._estado.confirmar(self)
+
+    def pagar(self, operacion: str | None) -> None:
+        self._estado.pagar(self, operacion)
+
+    def cancelar(self) -> None:
+        self._estado.cancelar(self)
 
     def subtotal(self) -> float:
         return sum(linea.cantidad * linea.precio for linea in self.lineas)
@@ -48,31 +73,19 @@ class ServicioPedidos:
             self.fabrica.registrar("PLIN", lambda: PlinAdapter(self.plin))
 
     def confirmar_y_pagar(self, pedido: Pedido, medio: str) -> str:
-        if pedido.estado != "BORRADOR":
-            if pedido.estado == "CANCELADO":
-                raise ValueError("El pedido está cancelado")
-            elif pedido.estado == "PAGADO":
-                raise ValueError("El pedido ya fue pagado")
-            raise ValueError("Estado no válido")
-
-        if not pedido.lineas:
-            raise ValueError("El pedido no tiene líneas")
-
         pasarela = self.fabrica.crear(medio)
-        pedido.estado = "CONFIRMADO"
-
+        pedido.confirmar()
         total = pedido.total()
         resultado = pasarela.cobrar(total, pedido.celular)
 
         if resultado.aprobado:
-            pedido.estado = "PAGADO"
-            pedido.operacion = resultado.operacion
+            pedido.pagar(resultado.operacion)
             puestos = sorted({linea.puesto for linea in pedido.lineas})
             for puesto in puestos:
                 self.eventos.append(f"whatsapp:{puesto}:Pedido {pedido.id} pagado")
             self.eventos.append(f"reporte:{pedido.id}:{total:.2f}")
         else:
-            pedido.estado = "CANCELADO"
+            pedido.cancelar()
 
         return pedido.estado
 
