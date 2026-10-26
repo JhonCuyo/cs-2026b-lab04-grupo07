@@ -3,6 +3,9 @@
 import pytest
 from src.pedidos.pagos import PasarelaPago, ResultadoPago
 from src.pedidos.servicio import ServicioPedidos, Pedido, Linea
+from src.pedidos.eventos import Suscriptor
+from src.pedidos.pagos import ConReintentos, YapeAdapter
+from src.pedidos.externos import YapeSDK
 
 
 def crear_pedido_base() -> Pedido:
@@ -42,3 +45,29 @@ def test_e3_state_impide_pagar_sin_confirmar_o_cancelar_un_pedido_pagado():
     # Una vez PAGADO no se puede cancelar ni volver a pagar
     with pytest.raises(ValueError, match="No se puede cancelar un pedido en estado PAGADO"):
         pedido.cancelar()
+
+def test_e4_observer_nuevo_suscriptor_repartidor_sin_tocar_servicio():
+    avisos_repartidor: list[str] = []
+
+    class NotificadorRepartidor(Suscriptor):
+        def actualizar(self, evento: str, datos: dict) -> None:
+            avisos_repartidor.append(f"delivery:Pedido {datos['id']} listo en {len(datos['puestos'])} puestos")
+
+    servicio = ServicioPedidos()
+    servicio.publicador.suscribir("pedido_pagado", NotificadorRepartidor())
+
+    pedido = crear_pedido_base()
+    servicio.confirmar_y_pagar(pedido, "YAPE")
+
+    assert avisos_repartidor == ["delivery:Pedido 201 listo en 1 puestos"]
+
+
+def test_e4_decorator_con_reintentos_aisla_fallos_temporales_de_red():
+    sdk_inestable = YapeSDK(fallas=2)
+    pasarela_decorada = ConReintentos(YapeAdapter(sdk_inestable), intentos=3)
+
+    resultado = pasarela_decorada.cobrar(45.0, "959123456")
+
+    assert resultado.aprobado is True
+    assert resultado.operacion == "YAPE-4500"
+    assert sdk_inestable.llamadas == 3
