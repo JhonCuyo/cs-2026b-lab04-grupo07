@@ -204,3 +204,43 @@ graph LR
 * [Bitácora de uso de IA (`bitacora-ia.md`)](docs/architecture/c4/bitacora-ia.md)
 
 ---
+
+## Patrones de diseño (Lab 07) — San Camilo en Línea
+
+Refactorización hacia patrones de diseño GoF asistida por IA sobre el flujo crítico de confirmación y pago multipuesto y la función de IA de normalización de catálogo, protegida con pruebas de caracterización (`pytest`) y medida con `radon`.
+
+### 1. Tabla de Trazabilidad: Olor $\rightarrow$ Patrón $\rightarrow$ Principio SOLID $\rightarrow$ Prueba
+
+| Olor de Código Detectado (`antes/servicio.py`) | Patrón GoF Aplicado | Principio SOLID | Archivo Implementado | Prueba Automatizada que lo Demuestra (`pytest`) |
+| :--- | :--- | :--- | :--- | :--- |
+| `if/elif` por medio de pago (`YAPE`, `PLIN`) y por tarifa de entrega (`RECOJO`, `DELIVERY`) | **Strategy + Factory Method (registro)** | **O** (Open/Closed), **D** (DIP) | `src/pedidos/pagos.py` | `test_e2_open_closed_nueva_pasarela_sin_modificar_servicio` |
+| Dominio acoplado a firmas incompatibles de `YapeSDK` (soles/dict) y `PlinClient` (céntimos/tupla) | **Adapter** (`YapeAdapter`, `PlinAdapter`) | **D** (DIP), **I** (ISP) | `src/pedidos/pagos.py` | `test_01_pago_yape_aprobado...` y `test_02_pago_plin_con_delivery...` |
+| Bucle `for intento in range(3)` con `try/except TimeoutError` duplicado en cada pasarela | **Decorator** (`ConReintentos`) | **S** (SRP), **O** (Open/Closed) | `src/pedidos/pagos.py` | `test_e4_decorator_con_reintentos_aisla_fallos_temporales_de_red` |
+| Condicionales anidados sobre el atributo string `pedido.estado` | **State** (`EstadoPedido` y 4 subclases) | **S** (SRP), **L** (Liskov) | `src/pedidos/estados.py` | `test_e3_state_impide_pagar_sin_confirmar_o_cancelar_un_pedido_pagado` |
+| Formateo manual de avisos de WhatsApp por puesto y de reportes dentro del método de pago | **Observer** (`PublicadorEventos` + Suscriptores) | **S** (SRP), **O** (Open/Closed) | `src/pedidos/eventos.py` | `test_e4_observer_nuevo_suscriptor_repartidor_sin_tocar_servicio` |
+| Acoplamiento al cliente LLM y diccionario de caché manual en `normalizar_producto` | **Strategy + Adapter + Decorator** (`ProveedorLLM`, `ConCache`) | **D** (DIP), **S** (SRP) | `src/pedidos/ia.py` | `test_e5_decorator_cache_ia_evita_doble_llamada_al_llm` |
+| Validaciones secuenciales mezcladas sobre la salida no determinista del LLM | **Chain of Responsibility** (`Guardrail` y 3 eslabones) | **S** (SRP), **O** (Open/Closed) | `src/pedidos/ia.py` | `test_e5_chain_of_responsibility_guardrails_bloquean_afirmaciones_y_exceso_longitud` |
+
+### 2. Resumen de Métricas (`radon`) Antes vs. Después
+
+| Métrica | Versión `antes` | Versión `después` (Con Patrones) | Resultado |
+| :--- | :---: | :---: | :--- |
+| Complejidad ciclomática de `confirmar_y_pagar()` | 16 (Grado C) | **2 (Grado A)** | Reducción del 87,5% (debajo del umbral máximo de 10). |
+| Complejidad ciclomática de `normalizar_producto()` | 7 (Grado B) | **1 (Grado A)** | Delegación limpia hacia `NormalizadorProductos`. |
+| Complejidad ciclomática promedio | 11,00 (Grado C) | **1,54 (Grado A)** | Todos los métodos del paquete están en Grado A (1 a 3). |
+| Líneas de código efectivas (SLOC) | 96 SLOC (1 archivo) | **248 SLOC (5 archivos)** | Trade-off documentado en [metricas.md](docs/design/patrones/metricas.md). |
+| Suite de pruebas (`pytest`) | 10 passed | **25 passed** (20 caracterización + 5 patrones) | 100% de comportamiento preservado. |
+
+### 3. Artefactos y Diagramas del Laboratorio 07
+* [Detección de olores y decisiones (`olores.md`)](docs/design/patrones/olores.md)
+* [Métricas detalladas y análisis de trade-off (`metricas.md`)](docs/design/patrones/metricas.md)
+* [Bitácora de interacciones con IA (`bitacora-ia.md`)](docs/design/patrones/bitacora-ia.md)
+* [ADR-005: Patrones de diseño en el módulo Pedidos (`005-patrones-de-diseno.md`)](docs/architecture/adr/005-patrones-de-diseno.md)
+* **Diagramas PlantUML por patrón:**
+  * [Pagos: Strategy + Adapter + Decorator + Factory](docs/design/patrones/img/pagos-patrones.png)
+  * [Ciclo de vida: Patrón State](docs/design/patrones/img/estados-state.png)
+  * [Notificaciones multipuesto: Patrón Observer](docs/design/patrones/img/eventos-observer.png)
+  * [IA Aislada: Strategy + Adapter + Decorator + Chain of Responsibility](docs/design/patrones/img/ia-patrones.png)
+  * [Diagrama de Clases General Actualizado (Lab 05 $\rightarrow$ Lab 07)](docs/design/clases.png)
+
+---
