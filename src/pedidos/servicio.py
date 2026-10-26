@@ -1,6 +1,6 @@
-"""Servicio de Pedidos con Patrón State integrado (E3)."""
+"""Servicio de Pedidos de San Camilo en Línea (Versión final refactorizada con patrones GoF)."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from src.pedidos.externos import YapeSDK, PlinClient, ClienteLLMFalso
 from src.pedidos.estados import EstadoPedido, Borrador, MAPA_ESTADOS
 from src.pedidos.pagos import (
@@ -8,6 +8,16 @@ from src.pedidos.pagos import (
     YapeAdapter,
     PlinAdapter,
     calcular_tarifa_envio,
+)
+from src.pedidos.eventos import (
+    PublicadorEventos,
+    NotificadorWhatsAppComerciantes,
+    ActualizadorReportes,
+)
+from src.pedidos.ia import (
+    LocalLlamaAdapter,
+    ConCache,
+    NormalizadorProductos,
 )
 
 
@@ -52,6 +62,9 @@ class Pedido:
     def cancelar(self) -> None:
         self._estado.cancelar(self)
 
+    def puestos_involucrados(self) -> list[str]:
+        return sorted({linea.puesto for linea in self.lineas})
+
     def subtotal(self) -> float:
         return sum(linea.cantidad * linea.precio for linea in self.lineas)
 
@@ -60,17 +73,32 @@ class Pedido:
 
 
 class ServicioPedidos:
-    def __init__(self, yape=None, plin=None, llm=None, fabrica: FabricaPasarelas | None = None):
+    def __init__(
+        self,
+        yape=None,
+        plin=None,
+        llm=None,
+        fabrica: FabricaPasarelas | None = None,
+        publicador: PublicadorEventos | None = None,
+        normalizador: NormalizadorProductos | None = None,
+    ):
         self.yape = yape or YapeSDK()
         self.plin = plin or PlinClient()
         self.llm = llm or ClienteLLMFalso()
         self.eventos: list[str] = []
-        self._cache_ia: dict[str, str] = {}
 
         self.fabrica = fabrica or FabricaPasarelas()
         if not fabrica:
             self.fabrica.registrar("YAPE", lambda: YapeAdapter(self.yape))
             self.fabrica.registrar("PLIN", lambda: PlinAdapter(self.plin))
+
+        self.publicador = publicador or PublicadorEventos()
+        if not publicador:
+            self.publicador.suscribir("pedido_pagado", NotificadorWhatsAppComerciantes(self.eventos))
+            self.publicador.suscribir("pedido_pagado", ActualizadorReportes(self.eventos))
+
+        proveedor_ia = ConCache(LocalLlamaAdapter(self.llm))
+        self.normalizador = normalizador or NormalizadorProductos(proveedor_ia)
 
     def confirmar_y_pagar(self, pedido: Pedido, medio: str) -> str:
         pasarela = self.fabrica.crear(medio)
@@ -80,27 +108,19 @@ class ServicioPedidos:
 
         if resultado.aprobado:
             pedido.pagar(resultado.operacion)
-            puestos = sorted({linea.puesto for linea in pedido.lineas})
-            for puesto in puestos:
-                self.eventos.append(f"whatsapp:{puesto}:Pedido {pedido.id} pagado")
-            self.eventos.append(f"reporte:{pedido.id}:{total:.2f}")
+            self.publicador.publicar(
+                "pedido_pagado",
+                {
+                    "id": pedido.id,
+                    "celular": pedido.celular,
+                    "total": total,
+                    "puestos": pedido.puestos_involucrados(),
+                },
+            )
         else:
             pedido.cancelar()
 
         return pedido.estado
 
     def normalizar_producto(self, texto_crudo: str) -> str:
-        if not texto_crudo or not texto_crudo.strip():
-            raise ValueError("El nombre del producto no puede estar vacío")
-        clave = texto_crudo.strip().lower()
-        if clave not in self._cache_ia:
-            self._cache_ia[clave] = self.llm.generar(f"Normaliza: {clave}")
-        salida = self._cache_ia[clave]
-        if "s/" in salida.lower():
-            raise ValueError("Guardrail: la IA incluyó un precio no permitido")
-        for palabra in ("cura", "milagroso", "100% medicinal", "garantizado"):
-            if palabra in salida.lower():
-                raise ValueError(f"Guardrail: afirmación no permitida '{palabra}'")
-        if len(salida) > 60:
-            raise ValueError("Guardrail: nombre normalizado excede 60 caracteres")
-        return salida
+        return self.normalizador.normalizar(texto_crudo)

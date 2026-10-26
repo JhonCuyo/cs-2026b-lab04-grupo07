@@ -6,6 +6,8 @@ from src.pedidos.servicio import ServicioPedidos, Pedido, Linea
 from src.pedidos.eventos import Suscriptor
 from src.pedidos.pagos import ConReintentos, YapeAdapter
 from src.pedidos.externos import YapeSDK
+from src.pedidos.ia import LocalLlamaAdapter, ConCache, NormalizadorProductos
+from src.pedidos.externos import ClienteLLMFalso
 
 
 def crear_pedido_base() -> Pedido:
@@ -71,3 +73,28 @@ def test_e4_decorator_con_reintentos_aisla_fallos_temporales_de_red():
     assert resultado.aprobado is True
     assert resultado.operacion == "YAPE-4500"
     assert sdk_inestable.llamadas == 3
+
+def test_e5_decorator_cache_ia_evita_doble_llamada_al_llm():
+    llm_falso = ClienteLLMFalso("Cebolla Roja Arequipeña (Kg)")
+    normalizador = NormalizadorProductos(ConCache(LocalLlamaAdapter(llm_falso)))
+
+    assert normalizador.normalizar("cebolla roja") == "Cebolla Roja Arequipeña (Kg)"
+    assert normalizador.normalizar("  CEBOLLA ROJA  ") == "Cebolla Roja Arequipeña (Kg)"
+    assert llm_falso.llamadas == 1
+
+
+def test_e5_chain_of_responsibility_guardrails_bloquean_afirmaciones_y_exceso_longitud():
+    # Caso 1: Afirmación médica prohibida
+    normalizador_medico = NormalizadorProductos(
+        LocalLlamaAdapter(ClienteLLMFalso("Miel de abeja que cura la gripe"))
+    )
+    with pytest.raises(ValueError, match="afirmación no permitida 'cura'"):
+        normalizador_medico.normalizar("miel")
+
+    # Caso 2: Nombre demasiado largo para pantalla de gama baja (> 60 chars)
+    texto_largo = "Papa Amarilla Especial Extra Grande Seleccionada del Valle de Majes Arequipa"
+    normalizador_largo = NormalizadorProductos(
+        LocalLlamaAdapter(ClienteLLMFalso(texto_largo))
+    )
+    with pytest.raises(ValueError, match="excede 60 caracteres"):
+        normalizador_largo.normalizar("papa")
