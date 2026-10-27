@@ -1,0 +1,50 @@
+digraph ArbolUtilidadSanCamilo {
+    rankdir=LR;
+    graph [fontname="Arial", fontsize=11, pad="0.3", nodesep="0.25", ranksep="0.6"];
+    node [fontname="Arial", fontsize=10, style="rounded,filled", shape=box];
+    edge [color="#666666", arrowsize=0.7];
+
+    raiz [label="Utilidad\nSan Camilo en Línea 2.0\n(San Camilo + Altiplano + Río Seco)", fillcolor="#1B365D", fontcolor="white", penwidth=1.5];
+
+    // Nivel 2: Los 4 Atributos de Calidad
+    seg [label="Seguridad\n(Aislamiento)", fillcolor="#B8332A", fontcolor="white"];
+    mod [label="Modificabilidad", fillcolor="#B8332A", fontcolor="white"];
+    ren [label="Rendimiento", fillcolor="#B8332A", fontcolor="white"];
+    dis [label="Disponibilidad", fillcolor="#B8332A", fontcolor="white"];
+
+    raiz -> {seg mod ren dis};
+
+    // Nivel 3: Refinamientos
+    seg_ais [label="Aislamiento\nmultimercado", fillcolor="#F5C6CB", color="#B8332A"];
+    seg_pii [label="Protección de\ndatos personales", fillcolor="#F5C6CB", color="#B8332A"];
+
+    mod_mer [label="Incorporar nuevo\nmercado y reglas", fillcolor="#F5C6CB", color="#B8332A"];
+    mod_pag [label="Nueva pasarela\nde pago", fillcolor="#F5C6CB", color="#B8332A"];
+
+    ren_pic [label="Latencia en hora\npunta (3 mercados)", fillcolor="#F5C6CB", color="#B8332A"];
+
+    dis_ext [label="Caída de pasarela\no WhatsApp API", fillcolor="#F5C6CB", color="#B8332A"];
+    dis_3g  [label="Comerciante sin\nseñal móvil 3G", fillcolor="#F5C6CB", color="#B8332A"];
+
+    seg -> {seg_ais seg_pii};
+    mod -> {mod_mer mod_pag};
+    ren -> ren_pic;
+    dis -> {dis_ext dis_3g};
+
+    // Nivel 4: Escenarios de 6 partes con medida numérica y calificación (Importancia, Dificultad)
+    qa01 [label="(H,H) QA-01: Comerciante o administrador de Altiplano consulta ventas o pedidos\n-> 0 filas filtradas de San Camilo o Río Seco (100% aislamiento RLS)", fillcolor="#F8F9FA", color="#999999"];
+    qa02 [label="(H,M) QA-02: Administración agrega un nuevo mercado con su propia tarifa de envío y horario\n-> activo en <= 1 día y 0 líneas de código desplegadas", fillcolor="#F8F9FA", color="#999999"];
+    qa03 [label="(H,M) QA-03: 18 req/s al catálogo en hora punta dominical (3 mercados)\n-> tiempo de respuesta p95 <= 1500 ms", fillcolor="#F8F9FA", color="#999999"];
+    qa04 [label="(H,H) QA-04: Pasarela Yape/Plin cae durante 20 min en plena jornada\n-> 0 pedidos perdidos y <= 20 llamadas al proveedor caído", fillcolor="#F8F9FA", color="#999999"];
+    qa05 [label="(H,M) QA-05: Comerciante en sótano/interior sin señal 3G actualiza stock y precios\n-> guarda en local (IndexedDB) y sincroniza en <= 3 min al recuperar red", fillcolor="#F8F9FA", color="#999999"];
+    qa06 [label="(M,L) QA-06: Integrar nueva billetera o pasarela QR en el módulo Pagos\n-> implementado en <= 2 días-persona y 0 cambios en ServicioPedidos (Lab 07)", fillcolor="#F8F9FA", color="#999999"];
+    qa07 [label="(M,L) QA-07: Tráfico de clientes y teléfonos de comerciantes (Ley 29733)\n-> 100% tráfico bajo TLS 1.3 (Nginx) y disco cifrado en el VPS", fillcolor="#F8F9FA", color="#999999"];
+
+    seg_ais -> qa01;
+    seg_pii -> qa07;
+    mod_mer -> qa02;
+    mod_pag -> qa06;
+    ren_pic -> qa03;
+    dis_ext -> qa04;
+    dis_3g  -> qa05;
+}
