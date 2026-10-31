@@ -244,3 +244,78 @@ Refactorización hacia patrones de diseño GoF asistida por IA sobre el flujo cr
   * [Diagrama de Clases General Actualizado (Lab 05 -> Lab 07)](img/clases.png)
 
 ---
+
+---
+
+## Diseño de la arquitectura (Lab 08) — San Camilo en Línea 2.0
+
+![Fitness Functions CI](https://github.com/OWNER/REPO/actions/workflows/fitness.yml/badge.svg)
+
+Evolución arquitectónica sistemática mediante **Attribute-Driven Design (ADD 3.0)**, evaluación **ATAM-lite** y **Fitness Functions automatizadas** para escalar la plataforma desde el **Mercado San Camilo** hacia los mercados **Altiplano** y **Río Seco** (Arequipa).
+
+### 1. Árbol de Utilidad Priorizado (`E1`)
+
+![Árbol de Utilidad San Camilo 2.0](docs/architecture/utilidad/arbol.png)
+
+* [Ver código fuente Graphviz (`arbol.dot`)](docs/architecture/utilidad/arbol.dot)
+* [Ver detalle de escenarios de 6 partes y corrección a la IA (`escenarios.md`)](docs/architecture/utilidad/escenarios.md)
+
+### 2. Resumen de las Tres Iteraciones de ADD 3.0 (`E2` y `E4`)
+
+| Iteración | Escenarios Objetivo | Tácticas Arquitectónicas Aplicadas (Bass et al.) | Evidencia Cuantitativa (Antes vs. Después) | ¿Cumple? | ADR y Documento |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **Iteración 1** | **QA-01 (H,H)** Aislamiento y **QA-02 (H,M)** Reglas por mercado | **Seguridad:** *Limitar acceso* (`Row-Level Security` en PostgreSQL + claim `mercado_id` en JWT).<br>**Modificabilidad:** *Diferir el enlace* (Tabla `ConfiguracionMercado` en BD). | **Antes:** 3 filas ajenas expuestas y 14 líneas de código por nuevo mercado.<br>**Después:** **0 filas ajenas expuestas** y **0 líneas desplegadas** para dar de alta un 4.° mercado (`fitness/aislamiento_modificabilidad.py`). | **SÍ** | [iteracion-1.md](docs/architecture/add/iteracion-1.md)<br>[ADR-008](docs/architecture/adr/008-multitenencia-mercados-rls-parametrizacion.md) |
+| **Iteración 2** | **QA-03 (H,M)** Rendimiento a 18 req/s (3 mercados) | **Rendimiento:** *Optimizar consultas* (Índice compuesto `mercado_id, puesto_id`) + *Controlar demanda* (Caché Redis con TTL 30 s). | **Antes:** Colapso a 18 req/s con `p95 = 21 480,5 ms`.<br>**Después:** **`p95 = 115,3 ms`** con 85% caché y **`184,2 ms`** con caché fría (`fitness/rendimiento.py`, meta $\le 1500\text{ ms}$). | **SÍ** | [iteracion-2.md](docs/architecture/add/iteracion-2.md)<br>[ADR-006](docs/architecture/adr/006-rendimiento-catalogo-indice-cache.md)<br>[Ver Gráfico](docs/architecture/add/rendimiento_iteracion2.png) |
+| **Iteración 3** | **QA-04 (H,H)** Caída de Yape 20 min y **QA-05 (H,M)** Red 3G | **Disponibilidad:** *Reintentos + Circuit Breaker (`ConCircuitBreaker`) + Tabla `outbox_pagos` en PostgreSQL* + *PWA Offline-first (`IndexedDB`)*. | **Antes:** 195 pedidos perdidos (60 perdidos y 180 llamadas en caída con solo reintentos).<br>**Después:** **0 pedidos perdidos (100% éxito)** y solo **18 llamadas** en caída (`fitness/disponibilidad.py`). | **SÍ** | [iteracion-3.md](docs/architecture/add/iteracion-3.md)<br>[ADR-007](docs/architecture/adr/007-resiliencia-pagos-circuit-breaker-outbox.md)<br>[Ver Gráfico](docs/architecture/add/disponibilidad_iteracion3.png) |
+
+### 3. Modelo C4 Actualizado, Evaluación ATAM-lite y Fitness Functions (`E3`, `E5` a `E7`)
+
+* **Vista de Contenedores C4 con trazabilidad `[QA-01..QA-07]`:** [Ver imagen PNG](docs/architecture/c4/img/structurizr-Contenedores.png) | [Modelo DSL (`workspace.dsl`)](docs/architecture/c4/workspace.dsl)
+* **Informe ATAM-lite y Matriz de Riesgos:** [Ver informe (`atam-lite.md`)](docs/architecture/atam-lite.md) | [Ver Matriz de Riesgos PNG](docs/architecture/riesgos_atam.png)
+* **Bitácora de uso de IA (Lab 08):** [Ver bitácora (`bitacora-ia.md`)](docs/architecture/bitacora-ia.md)
+* **Fitness Functions en Integración Continua (`.importlinter` y `tests/test_fitness.py`):**
+  * `FF-01` (Estructural): Capas del monolito modular sin ciclos (`ADR-001`).
+  * `FF-02` (Estructural): Ningún módulo de dominio importa `src.sancamilo.pagos.adaptadores` (`ADR-005`). [Ver prueba de violación documentada](docs/architecture/add/violacion-fitness-prueba.md).
+  * `FF-03` (Calidad - Rendimiento): Presupuesto de latencia `p95 <= 1500 ms` a 18 req/s (`QA-03`).
+  * `FF-04` y `FF-05` (Calidad - Disponibilidad): `0 pedidos perdidos` y `<= 20 llamadas` durante caída de 20 min de la pasarela (`QA-04`).
+  * `FF-06` (Calidad - Seguridad/Modificabilidad): `0 filas filtradas` entre mercados con RLS y alta de mercado sin tocar código (`QA-01`, `QA-02`).
+
+### 4. Reto Opcional (+2 puntos): Medición Real del Endpoint vs. Simulación $M/G/c$
+Ejecutamos el prototipo HTTP real con índice compuesto y caché en memoria (`python fitness/benchmark_real.py`) bajo 18 hilos concurrentes (360 solicitudes) y comparamos con la simulación estocástica $M/G/c$:
+* **Resultado medido en el prototipo local:** `p50 = 1,45 ms`, **`p95 = 8,90 ms`**, `media = 2,30 ms`.
+* **Resultado de la simulación $M/G/c$ (`fitness/rendimiento.py`):** `p50 = 12,1 ms`, **`p95 = 115,3 ms`**, `media = 24,8 ms`.
+* **Explicación de las diferencias:** En el prototipo local (`benchmark_real.py`) la comunicación ocurre por interfaz *loopback* (`127.0.0.1`) sin latencia de red móvil 3G, sin handshake TLS de Nginx y con SQLite en RAM; en cambio, la simulación $M/G/c$ modela tiempos de servicio lognormales calibrados para un servidor PostgreSQL en disco (`~42 ms` con índice) y red de contenedores Docker. Ambas pruebas confirman que el diseño cumple holgadamente el presupuesto `p95 <= 1500 ms`.
+
+---
+
+### Cuestionario del Laboratorio 08
+
+1. **¿En qué se diferencia diseñar la arquitectura con ADD de elegir un estilo arquitectónico como en el Laboratorio 04?**
+   Elegir un estilo arquitectónico en el Laboratorio 04 (`Monolito Modular` en el `ADR-001`) define la macro-estructura inicial del sistema, pero no especifica cómo resolver los cuellos de botella de rendimiento, fallas de proveedores externos ni el aislamiento multitenant cuando el negocio crece. **ADD 3.0** es un método iterativo guiado por escenarios de calidad medibles: en cada iteración toma 1 o 2 escenarios prioritarios (`(H,H)` o `(H,M)`), refina partes concretas del sistema seleccionando tácticas arquitectónicas y valida con evidencia cuantitativa si el escenario se cumple sin romper el estilo base.
+
+2. **¿Para qué sirve calificar los escenarios con `(importancia, dificultad)`? ¿Qué escenario de su árbol tiene la mayor prioridad y por qué?**
+   Sirve para enfocar el esfuerzo de arquitectura en los requisitos que entregan mayor valor al negocio y representan el mayor riesgo técnico (`(H,H)` y `(H,M)`), evitando gastar tiempo en características triviales o ya resueltas (`(M,L)`). En nuestro árbol, los escenarios de máxima prioridad son **`QA-01 (H,H)`** (aislamiento de datos entre los mercados San Camilo, Altiplano y Río Seco) y **`QA-04 (H,H)`** (0 pedidos perdidos ante una caída de 20 minutos de Yape), porque una fuga de información comercial entre mercados competidores o la pérdida de cobros confirmados destruiría la confianza en la plataforma.
+
+3. **¿Qué diferencia hay entre una táctica y un patrón? Ilustre con el circuit breaker.**
+   Una **táctica arquitectónica** es una decisión de diseño atómica enfocada en controlar la respuesta de un único atributo de calidad (por ejemplo, *"detectar fallas"*, *"limitar reintentos"* o *"prevenir propagación de fallas"*), mientras que un **patrón** empaqueta varias tácticas en una estructura de clases colaboradoras reutilizable. El **Circuit Breaker** combina las tácticas de *detección de fallas* (contador de `TimeoutError` hasta `umbral=3`), *prevención de fallas* (estado `ABIERTO` que falla rápido sin llamar al proveedor caído) y *recuperación controlada* (estado `SEMIABIERTO` tras `120 s`), y en nuestro código (`fitness/disponibilidad.py`) se implementa estructuralmente mediante el patrón de diseño **Decorator** (`ConCircuitBreaker`) envolviendo al puerto `PasarelaPago`.
+
+4. **Describa un punto de sensibilidad y un punto de trade-off de su arquitectura, con la evidencia que los respalda.**
+   * **Punto de sensibilidad:** En la Iteración 2 (`fitness/rendimiento.py`), si no se usa índice en base de datos, el `p95` a 18 req/s es extremadamente sensible a la tasa de aciertos de la caché en Redis: con 85% de aciertos el `p95` es **342,1 ms**, pero por debajo del 20% de aciertos (caché fría) supera los **3500 ms**.
+   * **Punto de trade-off:** La caché con TTL de 30 s mejora la latencia `p95` hasta **115,3 ms** (**Rendimiento**), pero sacrifica la frescura inmediata del inventario mostrado en el catálogo (**Consistencia**), lo cual se compensa validando el stock en la transacción de PostgreSQL al confirmar el pedido (`ADR-006`).
+
+5. **¿Qué supuestos hizo su simulación y cómo podrían invalidar la decisión si fueran falsos?**
+   En la simulación $M/G/c$ (`fitness/rendimiento.py`) asumimos llegadas independientes de Poisson ($\lambda = 18\text{ req/s}$), tiempos de consulta lognormales de media 42 ms con índice y 4 workers sin contención de locks por escrituras masivas simultáneas. Si en la realidad se produjeran ráfagas sincronizadas de más de 60 req/s (por ejemplo, una promoción flash a las 11:00:00 a. m.) o si las consultas de reportes bloquearan las tablas del catálogo, los 4 workers se saturarían y sería necesario activar el plan B de escalar horizontalmente o separar réplicas de lectura.
+
+6. **¿Qué riesgo de la evaluación cruzada aceptaron sin mitigarlo y por qué es razonable para un plazo de 1 mes?**
+   Aceptamos el **Riesgo `R1` (El servidor VPS único como Punto Único de Falla físico)**. Es razonable para un plazo de 1 mes (`R-01`) y un presupuesto estudiantil ajustado (`R-03`) porque configurar un clúster multi-región con failover automático de PostgreSQL duplicaría el costo mensual y consumiría semanas de ingeniería de infraestructura; en su lugar, realizamos backups externos diarios y mantenemos el despliegue reproducible en minutos con Docker Compose.
+
+7. **Explique qué es una fitness function y qué degradación concreta de su arquitectura detectaría cada una de las suyas.**
+   Una *fitness function* es una prueba automatizada que verifica objetivamente que una propiedad arquitectónica (estructural o de calidad) se preserve a lo largo de la evolución del software. En nuestro pipeline (`.github/workflows/fitness.yml`):
+   * **`FF-01` (`lint-imports`):** Detecta si alguien introduce una dependencia cíclica entre módulos (ej. que `catalogo` importe a `pedidos`).
+   * **`FF-02` (`lint-imports`):** Detecta si un módulo de negocio (`pedidos`, `catalogo`, `reportes`) se salta el puerto `PasarelaPago` e importa directamente `sancamilo.pagos.adaptadores`.
+   * **`FF-03` (`test_fitness.py`):** Detecta si un cambio en la consulta o la eliminación de la caché hace que el `p95` a 18 req/s supere los `1500 ms`.
+   * **`FF-04` y `FF-05` (`test_fitness.py`):** Detectan si alguien desactiva el `Circuit Breaker` o la tabla `outbox`, provocando pérdida de pedidos o bombardeo al proveedor durante una caída.
+   * **`FF-06` (`test_fitness.py`):** Detecta si se desactiva el filtro `RLS` exponiendo registros de un mercado a otro.
+
+8. **¿Qué propuesta de la IA rechazaron con evidencia? ¿Qué habría pasado si la aceptaban sin medir?**
+   Rechazamos dos propuestas clave con evidencia: (1) confiar **solo en la caché de Redis sin crear el índice compuesto** en PostgreSQL, y (2) **reemplazar Celery por Kafka o migrar a microservicios en Kubernetes** para soportar los 3 mercados. Si aceptábamos la primera sin medir la curva de sensibilidad, el sistema habría caído con tiempos de respuesta mayores a 3,5 segundos cada vez que Redis se reiniciara en hora punta; si aceptábamos Kafka/Kubernetes sin calcular que 1800 pedidos en 10 horas son apenas **0,05 pedidos/segundo**, habríamos incumplido el plazo de 1 mes (`R-01`) y agotado los 4 GB de RAM del VPS (`R-03`).
