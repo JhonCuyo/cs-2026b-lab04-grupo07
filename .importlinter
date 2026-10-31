@@ -1,0 +1,21 @@
+[importlinter]
+root_package = src
+
+[importlinter:contract:capas_monolito]
+name = FF-01 Capas del monolito modular San Camilo sin ciclos (ADR-001)
+type = layers
+layers =
+    src.sancamilo.reportes
+    src.sancamilo.pedidos
+    src.sancamilo.catalogo | src.sancamilo.pagos | src.sancamilo.notificaciones
+    src.sancamilo.compartido
+
+[importlinter:contract:aislamiento_adaptadores]
+name = FF-02 Solo el contenedor de arranque conoce los adaptadores de pago (ADR-005)
+type = forbidden
+source_modules =
+    src.sancamilo.pedidos
+    src.sancamilo.reportes
+    src.sancamilo.catalogo
+forbidden_modules =
+    src.sancamilo.pagos.adaptadores
