@@ -15,3 +15,17 @@
 | **Riesgo R5** *(Prob: 3, Imp: 2)* | `QA-05` (Offline-first 3G) | **Conflicto de sincronización** si dos personas del mismo puesto editan el precio del mismo producto sin señal 3G. | **Mitigado:** Política *Last-Write-Wins (LWW)* con marca de tiempo del servidor y notificación en pantalla al comerciante. |
 | **Falso Positivo de la IA (Refutado)** | `QA-04` | *"El worker de Celery en el mismo VPS colapsará la CPU al procesar los mensajes de los 3 mercados."* | **Refutado con números:** 1800 pedidos en 10 horas equivalen a **3 pedidos por minuto (0,05 pedidos/s)**. Procesar 3 tareas asíncronas por minuto consume $< 1\%$ de CPU en 1 vCPU. |
 | **No Riesgo** | `QA-03` | **Mantener el estilo de Monolito Modular (`ADR-001`) para los 3 mercados.** | **Respaldado por simulación:** Con índice compuesto y caché, 4 workers en el monolito soportan 18 req/s con `p95 = 115 ms` (muy por debajo del límite de 1500 ms). |
+
+---
+
+## 2. Matriz de Probabilidad e Impacto y Mitigación de Riesgos en Zona Crítica (E7)
+
+![Matriz de Riesgos ATAM-lite](riesgos_atam.png)
+
+| ID | Riesgo Identificado | Probabilidad (1–5) | Impacto (1–5) | Severidad ($P \times I$) | Zona | Decisión: Mitigación Implementada o Razón de Aceptación |
+| :---: | :--- | :---: | :---: | :---: | :---: | :--- |
+| **R2** | Error u omisión en políticas **Row-Level Security (RLS)** expone pedidos o ventas de San Camilo a usuarios de Altiplano o Río Seco (`QA-01`). | 3 | 5 | **15** | **Crítica** | **Mitigado (`ADR-008` + `FF-06`):** Se implementó el filtro obligatorio por `mercado_id` y la fitness function `test_ff06_aislamiento_multimercado_rls_y_alta_sin_codigo` que se ejecuta en cada PR en GitHub Actions. |
+| **R3** | Pérdida de cobros diferidos durante una caída de Yape si la cola de pendientes se guarda en Redis sin persistencia (`QA-04`). | 3 | 4 | **12** | **Crítica** | **Mitigado (`ADR-007`):** Se descartó Redis para pagos diferidos y se adoptó una tabla transaccional `outbox_pagos` en PostgreSQL procesada por el worker Celery. |
+| **R1** | El servidor **VPS único** (`R-03`) actúa como Punto Único de Falla (SPOF) ante una caída de hardware del proveedor cloud. | 2 | 5 | **10** | **Media-Alta** | **Aceptado para el MVP de 1 mes:** Contratar un clúster multi-nodo en alta disponibilidad excede el presupuesto `R-03`. Se mitiga con backups automáticos diarios en almacenamiento externo y script de recreación con Docker Compose en $< 45\text{ min}$. |
+| **R4** | La caché de catálogo en Redis (TTL 30 s) muestra stock desactualizado durante picos de compra (`QA-03`). | 4 | 2 | **8** | **Aceptable** | **Mitigado (`ADR-006`):** El TTL se limita a 30 segundos y la reserva de stock se verifica transaccionalmente en PostgreSQL dentro de `Módulo Pedidos` antes de invocar el cobro. |
+| **R5** | Dos comerciantes del mismo puesto editan precios sin señal 3G y generan conflicto al reconectar (`QA-05`). | 3 | 2 | **6** | **Aceptable** | **Mitigado (`ADR-007`):** Resolución determinista *Last-Write-Wins (LWW)* con timestamp y aviso visual en la PWA. |
