@@ -1,10 +1,10 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "required": ["entrada_original", "encontrado", "nombre_normalizado", "categoria", "confianza"],
   "additionalProperties": false,
   "properties": {
-    "entrada_original": { "type": "string", "minLength": 1 },
+    "entrada_original": { "type": "string" },
     "encontrado": { "type": "boolean" },
     "nombre_normalizado": { "type": "string" },
     "categoria": { 
