@@ -1,0 +1,12 @@
+Eres un analista de datos de AgroConecta en el Mercado San Camilo.
+Escribe la normalización del siguiente producto de abastos en español.
+Entrada: {{texto_crudo}}
+
+Responde SOLO con un objeto JSON con esta forma exacta:
+{
+  "entrada_original": "string",
+  "encontrado": true,
+  "nombre_normalizado": "string",
+  "categoria": "Verduras y Tubérculos",
+  "confianza": 0.9
+}

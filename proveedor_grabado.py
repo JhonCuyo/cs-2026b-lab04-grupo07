@@ -9,7 +9,7 @@ def call_api(prompt, options, context):
     # Identificar qué caso de prueba se está ejecutando según la variable texto_crudo
     texto = vars_data.get("texto_crudo", "").strip().lower()
 
-    # Mapeo de casos grabados para la versión v1
+    # Las respuestas grabadas de referencia corresponden a la versión v1.
     version = "v1"
     if "papa amarilla tumbay" in texto:
         caso_id = "caso_1"
