@@ -1,0 +1,16 @@
+prompts:
+  - prompts/sancamilo_normalizar/v1.txt
+
+providers:
+  - id: file://proveedor_grabado.py
+    label: asistente-grabado-v1
+
+defaultTest:
+  assert:
+    - type: is-json
+      metric: A1_contrato_json
+    - type: is-json
+      value: file://asserts/esquema.json
+      metric: A2_esquema_valido
+
+tests: casos/casos.yaml
