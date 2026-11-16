@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["entrada_original", "encontrado", "nombre_normalizado", "categoria", "confianza"],
+  "additionalProperties": false,
+  "properties": {
+    "entrada_original": { "type": "string", "minLength": 1 },
+    "encontrado": { "type": "boolean" },
+    "nombre_normalizado": { "type": "string" },
+    "categoria": { 
+      "enum": ["Verduras y Tubérculos", "Lácteos y Quesos", "Carnes y Embutidos", "Abarrotes", "Desconocido"] 
+    },
+    "confianza": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+  }
+}
