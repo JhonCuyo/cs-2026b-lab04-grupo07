@@ -1,9 +1,9 @@
 prompts:
-  - prompts/sancamilo_normalizar/v1.txt
+  - prompts/sancamilo_normalizar/v3.txt
 
 providers:
   - id: file://proveedor_grabado.py
-    label: asistente-grabado-v1
+    label: asistente-grabado-v3
 
 defaultTest:
   assert:
