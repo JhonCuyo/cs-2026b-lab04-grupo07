@@ -1,0 +1,1 @@
+{"entrada_original":"papa amarilla tumbay 1kg","encontrado":true,"nombre_normalizado":"papa amarilla tumbay 1kg","categoria":"Verduras y Tubérculos","confianza":0.95}

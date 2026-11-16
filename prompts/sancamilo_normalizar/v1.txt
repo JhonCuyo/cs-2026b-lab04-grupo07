@@ -1,0 +1,2 @@
+Normaliza este nombre de producto escrito por un comerciante del mercado: {{texto_crudo}}
+Devuelve el resultado.

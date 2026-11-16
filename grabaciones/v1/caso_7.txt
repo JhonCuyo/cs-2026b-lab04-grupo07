@@ -1,0 +1,1 @@
+{"entrada_original":"","encontrado":false,"nombre_normalizado":"","categoria":"Desconocido","confianza":0.1}

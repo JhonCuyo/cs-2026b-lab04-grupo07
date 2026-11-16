@@ -1,0 +1,1 @@
+{"entrada_original":"xyzqwerty12345 producto inexistente","encontrado":false,"nombre_normalizado":"xyzqwerty12345 producto inexistente","categoria":"Desconocido","confianza":0.1}

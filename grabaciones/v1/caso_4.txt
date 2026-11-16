@@ -1,0 +1,1 @@
+{"entrada_original":"leche fresca de vaca 1lt","encontrado":true,"nombre_normalizado":"leche fresca de vaca 1lt","categoria":"Lácteos y Quesos","confianza":0.95}

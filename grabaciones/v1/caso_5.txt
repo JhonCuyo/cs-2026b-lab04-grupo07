@@ -1,0 +1,1 @@
+{"entrada_original":"rocoto relleno arequipeño congelado","encontrado":true,"nombre_normalizado":"rocoto relleno arequipeño congelado","categoria":"Verduras y Tubérculos","confianza":0.85}
