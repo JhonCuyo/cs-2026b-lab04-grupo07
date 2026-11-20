@@ -319,3 +319,32 @@ Ejecutamos el prototipo HTTP real con índice compuesto y caché en memoria (`py
 
 8. **¿Qué propuesta de la IA rechazaron con evidencia? ¿Qué habría pasado si la aceptaban sin medir?**
    Rechazamos dos propuestas clave con evidencia: (1) confiar **solo en la caché de Redis sin crear el índice compuesto** en PostgreSQL, y (2) **reemplazar Celery por Kafka o migrar a microservicios en Kubernetes** para soportar los 3 mercados. Si aceptábamos la primera sin medir la curva de sensibilidad, el sistema habría caído con tiempos de respuesta mayores a 3,5 segundos cada vez que Redis se reiniciara en hora punta; si aceptábamos Kafka/Kubernetes sin calcular que 1800 pedidos en 10 horas son apenas **0,05 pedidos/segundo**, habríamos incumplido el plazo de 1 mes (`R-01`) y agotado los 4 GB de RAM del VPS (`R-03`).
+
+---
+
+## Prompt Engineering como Código (Lab 09) — San Camilo en Línea 2.0
+
+![Prompt Evals CI](https://github.com/JhonCuyo/cs-2026b-lab04-grupo07/actions/workflows/prompts.yml/badge.svg)
+
+Diseño, versionado, evaluación automatizada con **promptfoo**, contratos estrictos con **JSON Schema** y mitigación de ataques de inyección de prompts (**OWASP LLM01**) aplicados al servicio de normalización de catálogo de productos (Tarea B).
+
+### 1. Evolución de Versiones del Prompt y Tasa de Aprobación (`E2` y `E3`)
+
+| Versión del Prompt | Elementos de la Anatomía Usados | Patrones Aplicados | Tasa de Aprobación (`promptfoo`) | Principal Causa de Fallo en Evaluaciones |
+| :---: | :--- | :--- | :---: | :--- |
+| **v1** | Solo tarea sin formato | Ninguno | **0,0% (0/8)** | Salida en texto plano sin estructura JSON; incumplimiento total de aserciones. |
+| **v2** | Rol, Contexto y Formato básico | Persona | **25,0% (2/8)** | Bloques de código markdown ` ```json ` envolviendo la salida; fallos en casos de borde. |
+| **v3** | Rol, Contexto, Tarea paso a paso, Restricciones, Delimitadores, Ejemplos (Few-shot), Formato | Persona, Cognitive Verifier, Template, Few-shot | **100,0% (8/8)** | **Ninguno.** Pasa todas las aserciones deterministas de contrato, categoría y defensa anti-inyección. |
+
+### 2. Contrato de Salida y Seguridad en Capas (`E1` y `E5`)
+* **Contrato JSON Schema (`asserts/esquema.json`):** Valida estrictamente los campos del producto normalizado.
+* **Defensa en Capas frente a Inyección de Prompts (OWASP LLM01):** Delimitadores estrictos `<producto>`, instrucción explícita de tratar datos como texto y validación obligatoria con JSON Schema.
+
+### 3. Artefactos del Laboratorio 09
+* [Esquema de Contrato JSON (`asserts/esquema.json`)](asserts/esquema.json)
+* [Dataset de Evaluación (`casos/casos.yaml`)](casos/casos.yaml)
+* [Prompt Versión Final (`prompts/sancamilo_normalizar/v3.txt`)](prompts/sancamilo_normalizar/v3.txt)
+* [Informe de Red Teaming (`seguridad/red-team.md`)](seguridad/red-team.md)
+* [Bitácora de IA (`docs/architecture/bitacora-prompts.md`)](docs/architecture/bitacora-prompts.md)
+
+---
