@@ -1,6 +1,7 @@
 """Cálculo de totales monetarios en soles para San Camilo en Línea."""
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 
 
 @dataclass(frozen=True)
@@ -16,7 +17,9 @@ def calcular_total_soles(lineas: list[LineaMonto], descuento: str = "0.00") -> s
     Regla de negocio: usar aritmética decimal exacta con redondeo comercial (HALF_UP)
     para evitar errores binarios de punto flotante en céntimos.
     """
-    # ERROR SEMBRADO (ISSUE-03): usa aritmética float binaria sin redondeo Decimal HALF_UP
-    subtotal = sum(linea.cantidad * float(linea.precio_unitario) for linea in lineas)
-    total = subtotal - float(descuento)
-    return f"{total:.2f}"
+    subtotal = sum(
+        (Decimal(linea.precio_unitario) * linea.cantidad for linea in lineas),
+        Decimal("0"),
+    )
+    total = subtotal - Decimal(descuento)
+    return str(total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
