@@ -51,3 +51,20 @@ def test_sandbox_bloquea_escape_de_directorio(tmp_path: pathlib.Path):
     h = Herramientas(tmp_path)
     with pytest.raises(PermissionError):
         h.leer_archivo("../secreto.txt")
+
+def test_mapa_repo_extrae_firmas_con_ast(tmp_path: pathlib.Path):
+    modulo = tmp_path / "src" / "sancamilo" / "demo.py"
+    modulo.parent.mkdir(parents=True)
+    modulo.write_text("class Pedido:\n    pass\n\ndef calcular(a, b):\n    return a + b\n", encoding="utf-8")
+    h = Herramientas(tmp_path)
+    mapa = h.mapa_repo("src/sancamilo")
+    assert "class Pedido" in mapa
+    assert "def calcular(a, b)" in mapa
+
+def test_memoria_notas_anotar_y_leer(tmp_path: pathlib.Path):
+    h = Herramientas(tmp_path, archivo_notas="notas.md")
+    assert h.leer_notas() == "(sin notas)"
+    resp = h.anotar("Hipótesis: float provoca error de redondeo en totales.py")
+    assert resp.startswith("OK:")
+    contenido = h.leer_notas()
+    assert "float provoca error de redondeo" in contenido

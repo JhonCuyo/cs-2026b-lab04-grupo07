@@ -1,0 +1,40 @@
+[
+  {
+    "pensamiento": "Leo ISSUE-03.md y obtengo el mapa del repositorio para ir directo al archivo sin múltiples búsquedas.",
+    "accion": "leer_archivo",
+    "args": {"ruta": "issues/ISSUE-03.md"}
+  },
+  {
+    "pensamiento": "Uso mapa_repo para localizar la firma exacta de calcular_total_soles.",
+    "accion": "mapa_repo",
+    "args": {"directorio": "src/sancamilo"}
+  },
+  {
+    "pensamiento": "Leo src/sancamilo/pedidos/totales.py para ver cómo calcula y redondea.",
+    "accion": "leer_archivo",
+    "args": {"ruta": "src/sancamilo/pedidos/totales.py"}
+  },
+  {
+    "pensamiento": "Anoto la causa raíz en la memoria de notas antes de editar.",
+    "accion": "anotar",
+    "args": {"texto": "ISSUE-03: src/sancamilo/pedidos/totales.py usa float en lugar de Decimal + ROUND_HALF_UP."}
+  },
+  {
+    "pensamiento": "Reemplazo el cálculo float por Decimal con quantize('0.01', rounding=ROUND_HALF_UP).",
+    "accion": "editar_archivo",
+    "args": {
+      "ruta": "src/sancamilo/pedidos/totales.py",
+      "antes": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass LineaMonto:\n    nombre: str\n    cantidad: int\n    precio_unitario: str  # Ej: \"0.10\", \"3.35\"\n\n\ndef calcular_total_soles(lineas: list[LineaMonto], descuento: str = \"0.00\") -> str:\n    \"\"\"Suma las líneas del pedido, aplica descuento y devuelve el monto exacto a 2 decimales.\n\n    Regla de negocio: usar aritmética decimal exacta con redondeo comercial (HALF_UP)\n    para evitar errores binarios de punto flotante en céntimos.\n    \"\"\"\n    # ERROR SEMBRADO (ISSUE-03): usa aritmética float binaria sin redondeo Decimal HALF_UP\n    subtotal = sum(linea.cantidad * float(linea.precio_unitario) for linea in lineas)\n    total = subtotal - float(descuento)\n    return f\"{total:.2f}\"",
+      "despues": "from dataclasses import dataclass\nfrom decimal import Decimal, ROUND_HALF_UP\n\n\n@dataclass(frozen=True)\nclass LineaMonto:\n    nombre: str\n    cantidad: int\n    precio_unitario: str  # Ej: \"0.10\", \"3.35\"\n\n\ndef calcular_total_soles(lineas: list[LineaMonto], descuento: str = \"0.00\") -> str:\n    \"\"\"Suma las líneas del pedido, aplica descuento y devuelve el monto exacto a 2 decimales.\n\n    Regla de negocio: usar aritmética decimal exacta con redondeo comercial (HALF_UP)\n    para evitar errores binarios de punto flotante en céntimos.\n    \"\"\"\n    subtotal = sum(\n        (Decimal(linea.cantidad) * Decimal(linea.precio_unitario) for linea in lineas),\n        Decimal(\"0.00\"),\n    )\n    total = (subtotal - Decimal(descuento)).quantize(Decimal(\"0.01\"), rounding=ROUND_HALF_UP)\n    return f\"{total:.2f}\""
+    }
+  },
+  {
+    "pensamiento": "Ejecuto las pruebas de ISSUE-03 para verificar que pasan en verde.",
+    "accion": "ejecutar_pruebas",
+    "args": {"objetivo": "tests/test_issue_03_redondeo.py"}
+  },
+  {
+    "pensamiento": "Verifico la memoria de notas y doy la respuesta final.",
+    "final": "Corregí ISSUE-03 en src/sancamilo/pedidos/totales.py usando Decimal y ROUND_HALF_UP. Con mapa_repo() y notas.md se redujo la exploración a 6 acciones sin errores de contrato. Pruebas de ISSUE-03: 2 passed."
+  }
+]

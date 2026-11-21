@@ -1,13 +1,15 @@
-"""Herramientas acotadas con sandbox sobre el repositorio de San Camilo en Línea."""
+"""Herramientas acotadas con sandbox, mapa AST del repositorio y memoria de notas."""
 
+import ast
 import pathlib
 import subprocess
 import sys
 
 
 class Herramientas:
-    def __init__(self, raiz: str | pathlib.Path):
+    def __init__(self, raiz: str | pathlib.Path, archivo_notas: str = "agentes/notas.md"):
         self.raiz = pathlib.Path(raiz).resolve()
+        self.archivo_notas = archivo_notas
 
     def _ruta(self, ruta: str) -> pathlib.Path:
         p = (self.raiz / ruta).resolve()
@@ -24,6 +26,9 @@ class Herramientas:
             "ejecutar_pruebas": "ejecutar_pruebas(objetivo='tests') -> ejecuta pytest sobre el objetivo dado.",
             "ver_cambios": "ver_cambios() -> devuelve git diff del repositorio.",
             "ejecutar_comando": "ejecutar_comando(comando) -> ejecuta un comando permitido por la política.",
+            "mapa_repo": "mapa_repo(directorio='src/sancamilo') -> devuelve clases y firmas de funciones extraídas con ast.",
+            "anotar": "anotar(texto) -> guarda una hipótesis o hallazgo persistente en la memoria de notas (notas.md).",
+            "leer_notas": "leer_notas() -> devuelve el contenido actual de la memoria de notas (notas.md).",
         }
 
     def listar_archivos(self, directorio: str = ".") -> str:
@@ -49,6 +54,38 @@ class Herramientas:
                 if patron in linea:
                     hallazgos.append(f"{p.relative_to(self.raiz)}:{idx}: {linea.strip()}")
         return "\n".join(hallazgos) if hallazgos else "sin resultados"
+
+    def mapa_repo(self, directorio: str = "src/sancamilo") -> str:
+        """Inspecciona archivos .py usando ast y retorna estructura con firmas."""
+        base = self._ruta(directorio)
+        lineas = []
+        for p in sorted(base.rglob("*.py")):
+            if "__pycache__" in p.parts or p.name == "__init__.py":
+                continue
+            arbol = ast.parse(p.read_text(encoding="utf-8"))
+            simbolos = []
+            for nodo in arbol.body:
+                if isinstance(nodo, ast.ClassDef):
+                    simbolos.append(f"class {nodo.name}")
+                elif isinstance(nodo, ast.FunctionDef):
+                    params = ", ".join(a.arg for a in nodo.args.args)
+                    simbolos.append(f"def {nodo.name}({params})")
+            if simbolos:
+                lineas.append(f"{p.relative_to(self.raiz)}: " + " | ".join(simbolos))
+        return "\n".join(lineas) if lineas else "(sin símbolos)"
+
+    def anotar(self, texto: str) -> str:
+        """Agrega una nota a la memoria de trabajo persistente en notas.md."""
+        p = self._ruta(self.archivo_notas)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        previo = p.read_text(encoding="utf-8") if p.exists() else "# Notas del Agente\n"
+        p.write_text(previo.rstrip() + f"\n- {texto.strip()}\n", encoding="utf-8")
+        return f"OK: nota guardada en {self.archivo_notas}"
+
+    def leer_notas(self) -> str:
+        """Lee las notas acumuladas en notas.md."""
+        p = self._ruta(self.archivo_notas)
+        return p.read_text(encoding="utf-8") if p.exists() else "(sin notas)"
 
     def editar_archivo(self, ruta: str, antes: str, despues: str) -> str:
         p = self._ruta(ruta)
@@ -82,13 +119,8 @@ class Herramientas:
 
     def ejecutar_comando(self, comando: str) -> str:
         partes = comando.split()
-        if partes:
-            if partes[0] == "python":
-                partes[0] = sys.executable
-            else:
-                local_bin = pathlib.Path(sys.executable).parent / partes[0]
-                if local_bin.exists():
-                    partes[0] = str(local_bin)
+        if partes and partes[0] == "python":
+            partes[0] = sys.executable
         res = subprocess.run(
             partes,
             cwd=self.raiz,
