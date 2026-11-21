@@ -20,5 +20,4 @@ def listar_productos_visibles(productos: list[ProductoCatalogo]) -> list[Product
 
     Regla de negocio: solo deben mostrarse productos activos y con stock > 0.
     """
-    # ERROR SEMBRADO (ISSUE-02): no filtra los productos agotados (stock <= 0)
-    return [p for p in productos if p.activo]
+    return [p for p in productos if p.activo is True and p.stock > 0]

@@ -1,0 +1,50 @@
+@startuml
+title Máquina de Estados del Agente ReAct — San Camilo en Línea (agentes/agente/nucleo.py)
+
+[*] --> Decidiendo : objetivo recibido
+
+state Decidiendo {
+  Decidiendo : El modelo propone JSON\n(pensamiento + accion | final)
+}
+
+Decidiendo --> ValidandoContrato : decisión JSON
+
+state ValidandoContrato {
+  ValidandoContrato : validar_decision(d, conocidas)
+}
+
+ValidandoContrato --> Decidiendo : [inválida] / CONTRATO_INVALIDO\n(error vuelve como observación)
+ValidandoContrato --> Finalizado : [es "final"]
+ValidandoContrato --> EvaluandoPolitica : [es "accion"]
+
+state EvaluandoPolitica {
+  EvaluandoPolitica : politica.evaluar(accion, args, paso)\n(sandbox, lista blanca, rutas protegidas)
+}
+
+EvaluandoPolitica --> LimiteAlcanzado : [paso > max_pasos]
+EvaluandoPolitica --> Decidiendo : [denegada] / BLOQUEADO
+EvaluandoPolitica --> EsperandoAprobacion : [accion == editar_archivo\ny aprobar_edicion activa]
+EvaluandoPolitica --> Ejecutando : [permitida y sin aprobación humana]
+
+state EsperandoAprobacion {
+  EsperandoAprobacion : Humano en el circuito\nvalida entrada ("s" / "n")
+}
+
+EsperandoAprobacion --> Ejecutando : [humano responde "s"]
+EsperandoAprobacion --> Decidiendo : [humano responde "n"] / BLOQUEADO
+
+state Ejecutando {
+  Ejecutando : ejecuta herramienta real\nen el sandbox del repositorio
+}
+
+Ejecutando --> Observando : resultado o excepción
+
+state Observando {
+  Observando : agrega observación al historial\ny registra evento en traza JSONL
+}
+
+Observando --> Decidiendo : siguiente iteración
+
+Finalizado --> [*] : respuesta final
+LimiteAlcanzado --> [*] : sin respuesta final
+@enduml
