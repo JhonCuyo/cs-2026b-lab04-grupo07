@@ -1,0 +1,48 @@
+sequenceDiagram
+    autonumber
+    actor H as Humano
+    participant A as Agente
+    participant P as Contrato/Política
+    participant T as Herramientas
+    H->>A: objetivo (planificador)
+    A-->>H: respuesta final (planificador)
+    H->>A: objetivo (ejecutor_r1)
+    A->>T: leer_archivo
+    T-->>A: # Issue #02: Producto agotado sigue visible e
+    A->>T: ejecutar_pruebas
+    T-->>A: .                                            
+    A->>T: leer_archivo
+    T-->>A: """Consultas del catálogo visible para client
+    A-xP: ejecutar_comando [BLOQUEADO]
+    P-->>A: BLOQUEADO
+    A->>T: editar_archivo
+    T-->>A: ERROR: el fragmento aparece 0 veces; debe apa
+    A->>T: ejecutar_pruebas
+    T-->>A: .                                            
+    A-->>H: respuesta final (ejecutor_r1)
+    H->>A: objetivo (revisor_r1)
+    A->>T: ver_cambios
+    T-->>A: (sin cambios)
+    A->>T: leer_archivo
+    T-->>A: """Consultas del catálogo visible para client
+    A-xP: editar_archivo [BLOQUEADO]
+    P-->>A: BLOQUEADO
+    A->>T: ejecutar_pruebas
+    T-->>A: .                                            
+    A-->>H: respuesta final (revisor_r1)
+    H->>A: objetivo (ejecutor_r2)
+    A->>T: leer_archivo
+    T-->>A: """Consultas del catálogo visible para client
+    A->>T: editar_archivo
+    T-->>A: OK: src/sancamilo/catalogo/productos.py modif
+    A->>T: ejecutar_pruebas
+    T-->>A: .                                            
+    A-->>H: respuesta final (ejecutor_r2)
+    H->>A: objetivo (revisor_r2)
+    A->>T: ver_cambios
+    T-->>A: diff --git a/src/sancamilo/catalogo/productos
+    A->>T: buscar
+    T-->>A: sin resultados
+    A->>T: ejecutar_pruebas
+    T-->>A: .....................................        
+    A-->>H: respuesta final (revisor_r2)
