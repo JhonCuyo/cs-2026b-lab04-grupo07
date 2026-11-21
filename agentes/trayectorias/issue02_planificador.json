@@ -1,0 +1,6 @@
+[
+  {
+    "pensamiento": "Descompongo ISSUE-02 en pasos claros y verificables sin usar herramientas.",
+    "final": "Plan para ISSUE-02:\n1. Leer issues/ISSUE-02.md y ejecutar tests/test_issue_02_agotados.py.\n2. Inspeccionar src/sancamilo/catalogo/productos.py.\n3. Filtrar productos con p.activo and p.stock > 0.\n4. Verificar que tests/test_issue_02_agotados.py pase sin tocar tests/."
+  }
+]
