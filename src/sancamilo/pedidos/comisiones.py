@@ -21,6 +21,4 @@ def calcular_comision_pedido(items: list[ItemPedido]) -> float:
     """
     if not items:
         return 0.0
-    puestos = {item.puesto for item in items}
-    # ERROR SEMBRADO (ISSUE-01): multiplica la comisión por la cantidad de puestos
-    return COMISION_FIJA_PEDIDO * len(puestos)
+    return COMISION_FIJA_PEDIDO
