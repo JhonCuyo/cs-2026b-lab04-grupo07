@@ -1,0 +1,18 @@
+# Lienzo de Diseño del Sistema Agéntico — San Camilo en Línea (Grupo 07)
+
+## 1. Decisiones de Diseño (7 decisiones justificadas)
+
+| N.º | Decisión de diseño | Elección para San Camilo en Línea | Justificación |
+| :-: | :--- | :--- | :--- |
+| 1 | **¿Agente o flujo de trabajo?** | **Agente** para resolución de issues de código; **flujo de trabajo fijo** para la normalización de productos del catálogo (Lab 09). | En los 3 issues (`ISSUE-01` a `ISSUE-03`) el sistema debe explorar el repositorio, ubicar la causa raíz, editar código y verificar con `pytest`; los pasos exactos no se conocen de antemano. En cambio, la normalización de nombres/precios de productos (Lab 09) tiene pasos deterministas (prompt → validación JSON Schema → guardado) y se resuelve mejor con un flujo fijo (más barato, predecible y fácil de probar). |
+| 2 | **Arquetipo** | **ReAct** (para issues acotados en agente único) + **Planificador-ejecutor** (en coordinación multiagente, Sección 1.3). | `ReAct` permite alternar razonamiento y acción para explorar `src/sancamilo/` y localizar errores. Combinarlo con `Planificador-ejecutor` en tareas con riesgo de seguridad (`ISSUE-02`) produce un plan corto y auditable antes de editar archivos. |
+| 3 | **Herramientas** | `listar_archivos`, `leer_archivo`, `buscar`, `editar_archivo`, `ejecutar_pruebas`, `ver_cambios`, `ejecutar_comando` (en E4 se añaden `mapa_repo`, `anotar`, `leer_notas`). | Conjunto mínimo suficiente para leer, buscar, editar y verificar el código de `San Camilo en Línea` sin exponer una shell libre. Todas operan dentro del sandbox del repositorio. |
+| 4 | **Memoria** | **Corto plazo** (historial de mensajes de la sesión) + **Memoria de notas/pizarra** (`notas.md` a partir de E4, Sección 1.6). | Los issues son tareas autocontenidas; no requieren una base de datos vectorial. La pizarra `notas.md` permite registrar hipótesis y archivos revisados sin inflar innecesariamente la ventana de contexto. |
+| 5 | **Coordinación** | **Agente único** en `ISSUE-01` e `ISSUE-03`; **Por gestor (planificador) + Actor-crítico (ejecutor y revisor de solo lectura)** en `ISSUE-02` (Sección 1.7). | Siguiendo el principio de parsimonia (Albada, 2025, cap. 8), empezamos con un solo agente y escalamos a actor-crítico en `ISSUE-02` para separar quién edita el código de quién audita seguridad y calidad (mínimo privilegio por rol). |
+| 6 | **Rol humano** | **Revisor** (humano en el circuito: aprueba ediciones de archivos y el Pull Request). | Es la primera iteración del sistema agéntico en el repositorio; la confianza aún es baja, por lo que ningún cambio se aplica ni se fusiona sin aprobación explícita de un integrante del Grupo 07. |
+| 7 | **Control (estado y política)** | Contrato JSON estricto, política por rol (mínimo privilegio), sandbox de rutas, rutas protegidas (`tests/`), lista blanca de comandos, límite de `max_pasos=12` (ejecutor) / `8` (revisor) y `MAX_RONDAS=2`. | Mitiga el exceso de agencia (OWASP LLM06), evita que el agente modifique las pruebas para "hacerlas pasar", bloquea comandos maliciosos por inyección indirecta y acota el costo/latencia. |
+
+## 2. Tareas donde NO conviene un agente (Flujo de trabajo fijo)
+
+- **Normalización de productos del catálogo (Lab 09):** Recibe texto crudo del comerciante y siempre sigue los mismos pasos (llamada al LLM → validación de esquema JSON → aplicación de guardrails). Usar un agente autónomo aquí añadiría latencia y variabilidad sin beneficio.
+- **Ejecución de Fitness Functions en CI (Lab 08):** `lint-imports` y `pytest tests/test_fitness.py` son verificaciones 100% deterministas que deben ejecutarse como un pipeline fijo en GitHub Actions.
