@@ -22,6 +22,9 @@ class Politica:
             "editar_archivo",
             "ver_cambios",
             "ejecutar_comando",
+            "mapa_repo",
+            "anotar",
+            "leer_notas",
         }
     )
     comandos_permitidos: tuple[str, ...] = (

@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    actor H as Humano
+    participant A as Agente
+    participant P as Contrato/Política
+    participant T as Herramientas
+    H->>A: objetivo (ejecutor_issue03)
+    A->>T: leer_archivo
+    T-->>A: # Issue #03: Error de redondeo en céntimos al
+    A->>T: mapa_repo
+    T-->>A: src\sancamilo\catalogo\productos.py: class Pr
+    A->>T: leer_archivo
+    T-->>A: """Cálculo de totales monetarios en soles par
+    A->>T: anotar
+    T-->>A: OK: nota guardada en agentes/notas.md
+    A->>T: editar_archivo
+    T-->>A: ERROR: el fragmento aparece 0 veces; debe apa
+    A->>T: ejecutar_pruebas
+    T-->>A: ..                                           
+    A-->>H: respuesta final (ejecutor_issue03)
