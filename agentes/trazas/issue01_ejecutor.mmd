@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor H as Humano
+    participant A as Agente
+    participant P as Contrato/Política
+    participant T as Herramientas
+    H->>A: objetivo (ejecutor_issue01)
+    A->>T: leer_archivo
+    T-->>A: # Issue #01: Un pedido a varios puestos cobra
+    A->>T: ejecutar_pruebas
+    T-->>A:          ] >       assert calcular_comision_p
+    A-xP: (ninguna) [CONTRATO_INVALIDO]
+    P-->>A: CONTRATO_INVALIDO
+    A->>T: buscar
+    T-->>A: src/sancamilo/pedidos/comisiones.py:16: def c
+    A->>T: leer_archivo
+    T-->>A: """Cálculo de comisión de plataforma para ped
+    A->>T: editar_archivo
+    T-->>A: OK: src/sancamilo/pedidos/comisiones.py modif
+    A->>T: ejecutar_pruebas
+    T-->>A: ..                                           
+    A->>T: ejecutar_comando
+    T-->>A: src/sancamilo/pedidos/comisiones.py     F 16:
+    A-->>H: respuesta final (ejecutor_issue01)
