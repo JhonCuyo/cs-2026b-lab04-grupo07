@@ -5,7 +5,8 @@ import pytest
 
 from agentes.agente.contrato import validar_decision
 from agentes.agente.herramientas import Herramientas
-from agentes.agente.politica import Politica
+from agentes.agente.nucleo import Agente
+from agentes.agente.politica import Politica, solicitar_aprobacion_consola
 
 H = {
     "listar_archivos",
@@ -68,3 +69,49 @@ def test_memoria_notas_anotar_y_leer(tmp_path: pathlib.Path):
     assert resp.startswith("OK:")
     contenido = h.leer_notas()
     assert "float provoca error de redondeo" in contenido
+
+
+def test_humano_en_circuito_valida_entrada_s_n(tmp_path: pathlib.Path, capsys):
+    archivo = tmp_path / "demo.txt"
+    archivo.write_text("original", encoding="utf-8")
+    propuesta = {"ruta": archivo.name, "antes": "original", "despues": "nuevo"}
+
+    respuestas = iter(["tal vez", "", " S "])
+    assert solicitar_aprobacion_consola(propuesta, entrada=lambda _: next(respuestas))
+    salida = capsys.readouterr().out
+    assert salida.count("Entrada inválida") == 2
+    assert f"editar: {archivo.name}" in salida
+    assert "--- ANTES ---\noriginal" in salida
+    assert "--- DESPUÉS ---\nnuevo" in salida
+
+    def sin_entrada(_):
+        raise EOFError
+
+    assert not solicitar_aprobacion_consola(propuesta, entrada=sin_entrada)
+
+    respuestas_no = iter(["x", "n"])
+    politica = Politica(
+        aprobar_edicion=lambda args: solicitar_aprobacion_consola(args, entrada=lambda _: next(respuestas_no))
+    )
+    decisiones = iter([
+        {"pensamiento": "Propongo un cambio", "accion": "editar_archivo", "args": propuesta},
+        {"pensamiento": "Termino la prueba", "final": "Fin"},
+    ])
+
+    class ModeloPrueba:
+        def decidir(self, historial):
+            return next(decisiones)
+
+    agente = Agente(
+        nombre="prueba",
+        modelo=ModeloPrueba(),
+        herramientas=Herramientas(tmp_path),
+        politica=politica,
+        objetivo="Probar el rechazo de una edición",
+        traza_archivo=tmp_path / "traza.jsonl",
+    )
+    agente.ejecutar()
+    evento = agente.eventos[1]
+    assert evento["estado"] == "BLOQUEADO"
+    assert "rechazó" in evento["observacion"]
+    assert archivo.read_text(encoding="utf-8") == "original"

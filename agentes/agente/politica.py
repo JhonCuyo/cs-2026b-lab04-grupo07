@@ -53,3 +53,20 @@ class Politica:
             if self.aprobar_edicion and not self.aprobar_edicion(args):
                 return Decision(False, "El revisor humano rechazó la edición")
         return Decision(True)
+
+
+def solicitar_aprobacion_consola(args: dict, entrada=input) -> bool:
+    """Pide confirmación para una edición y solo la aprueba con 's'."""
+    ruta = args.get("ruta", "(desconocida)")
+    print(f"\n[HUMANO EN EL CIRCUITO] El agente propone editar: {ruta}")
+    print(f"--- ANTES ---\n{args.get('antes', '')}")
+    print(f"--- DESPUÉS ---\n{args.get('despues', '')}")
+    while True:
+        try:
+            respuesta = entrada("¿Aprobar esta edición? (s/n): ").strip().lower()
+        except EOFError:
+            print("No se recibió confirmación. Edición rechazada.")
+            return False
+        if respuesta in ("s", "n"):
+            return respuesta == "s"
+        print("Entrada inválida. Responda únicamente 's' o 'n'.")
