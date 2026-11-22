@@ -11,7 +11,7 @@ if str(RAIZ) not in sys.path:
 from agentes.agente.herramientas import Herramientas
 from agentes.agente.modelos import ModeloGrabado
 from agentes.agente.nucleo import Agente
-from agentes.agente.politica import Politica
+from agentes.agente.politica import Politica, solicitar_aprobacion_consola
 from agentes.agente.traza import cargar_eventos, generar_mermaid, resumir_metricas
 
 MAX_RONDAS = 2
@@ -88,14 +88,20 @@ def ejecutar_actor_critico(h: Herramientas, aprobar_edicion=None) -> list[pathli
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--modo", choices=["unico", "actor-critico"], default="actor-critico")
+    parser.add_argument(
+        "--sin-confirmacion",
+        action="store_true",
+        help="Desactiva la confirmación interactiva (solo para CI o demos no interactivas)",
+    )
     args = parser.parse_args()
     h = Herramientas(RAIZ)
+    aprobador = None if args.sin_confirmacion else solicitar_aprobacion_consola
 
     if args.modo == "unico":
-        trazas = ejecutar_unico(h)
+        trazas = ejecutar_unico(h, aprobar_edicion=aprobador)
         salida_mmd = RAIZ / "agentes" / "trazas" / "issue02_unico.mmd"
     else:
-        trazas = ejecutar_actor_critico(h)
+        trazas = ejecutar_actor_critico(h, aprobar_edicion=aprobador)
         salida_mmd = RAIZ / "agentes" / "trazas" / "issue02_actor_critico.mmd"
 
     eventos = cargar_eventos(trazas)
