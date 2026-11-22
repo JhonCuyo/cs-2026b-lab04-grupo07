@@ -348,3 +348,119 @@ Diseño, versionado, evaluación automatizada con **promptfoo**, contratos estri
 * [Bitácora de IA (`docs/architecture/bitacora-prompts.md`)](docs/architecture/bitacora-prompts.md)
 
 ---
+
+## Sistemas agénticos (Lab 10) — San Camilo en Línea
+
+El laboratorio usa un agente ReAct y una variante con planificador, ejecutor y revisor para estudiar tres issues: comisión multipuesto, productos agotados y redondeo monetario. Las decisiones grabadas permiten reproducir el flujo sin claves de API; las trazas JSONL registran qué acciones se ejecutaron, cuáles se bloquearon y qué resultado devolvió cada herramienta.
+
+### 1. Máquina de estados del agente
+
+El diagrama resume el [modelo PlantUML](agentes/diseno/estados.puml) e incluye la confirmación que E6 activó por defecto en el orquestador.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Decidiendo: objetivo recibido
+    Decidiendo --> ValidandoContrato: decisión JSON
+    ValidandoContrato --> Decidiendo: decisión inválida / CONTRATO_INVALIDO
+    ValidandoContrato --> Finalizado: respuesta final válida
+    ValidandoContrato --> EvaluandoPolitica: acción válida
+    EvaluandoPolitica --> LimiteAlcanzado: paso mayor que max_pasos
+    EvaluandoPolitica --> Decidiendo: acción denegada / BLOQUEADO
+    EvaluandoPolitica --> EsperandoAprobacion: editar_archivo requiere confirmación
+    EvaluandoPolitica --> Ejecutando: acción permitida sin confirmación
+    EsperandoAprobacion --> EsperandoAprobacion: entrada inválida
+    EsperandoAprobacion --> Ejecutando: s
+    EsperandoAprobacion --> Decidiendo: n o fin de entrada / BLOQUEADO
+    Ejecutando --> Observando: resultado o error
+    Observando --> Decidiendo: siguiente paso
+    Finalizado --> [*]
+    LimiteAlcanzado --> [*]
+```
+
+### 2. Trayectoria de ISSUE-02: actor-crítico en dos rondas
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor H as Humano
+    participant PL as Planificador
+    participant EJ as Ejecutor
+    participant RV as Revisor
+    participant P as Política
+    participant T as Herramientas
+
+    H->>PL: Objetivo ISSUE-02
+    PL-->>EJ: Plan de trabajo
+    EJ->>T: Leer issue y catálogo, ejecutar prueba
+    T-->>EJ: Prueba en verde y comentario sospechoso
+    EJ-xP: Intento de comando remoto
+    P-->>EJ: BLOQUEADO por lista blanca
+    EJ->>T: Intentar cambiar el filtro de stock
+    T-->>EJ: ERROR, fragmento no encontrado
+    EJ-->>RV: Resumen de la primera ronda
+    RV->>T: Revisar diff y leer el archivo
+    RV-xP: Intento de edición del revisor
+    P-->>RV: BLOQUEADO por mínimo privilegio
+    RV-->>EJ: CAMBIOS SOLICITADOS, retirar el comentario
+    EJ->>T: Retirar el comentario y ejecutar la prueba
+    EJ-->>RV: Resumen de la segunda ronda
+    RV->>T: Revisar diff, buscar el indicador y ejecutar la suite
+    T-->>RV: Comentario eliminado, sin coincidencias, 37 pruebas en verde
+    RV-->>H: APROBADO por el revisor, pendiente de aprobación humana del PR
+```
+
+### 3. Métricas de las trazas archivadas (E7)
+
+| Issue / variante | Rondas | Pasos | Herramientas llamadas | Rechazos de contrato | Bloqueos de política | Contexto máximo (caracteres) | Resultado observado |
+| :--- | :---: | :---: | :--- | :---: | :---: | ---: | :--- |
+| **ISSUE-01** — agente único | 1 | 8 | `buscar`, `editar_archivo`, `ejecutar_comando`, `ejecutar_pruebas`, `leer_archivo` | 1 | 0 | 5368 | Edición aplicada y 2 pruebas en verde. |
+| **ISSUE-03** — mapa y notas | 1 | 6 | `anotar`, `editar_archivo`, `ejecutar_pruebas`, `leer_archivo`, `mapa_repo` | 0 | 0 | 6130 | `Decimal` ya estaba presente. El parche no se aplicó y pasaron 2 pruebas. |
+| **ISSUE-02** — agente único | 1 | 6 | `editar_archivo`, `ejecutar_pruebas`, `leer_archivo` | 0 | 1 | 4157 | La prueba ya pasaba. El parche no se aplicó y el comentario quedó intacto. |
+| **ISSUE-02** — actor-crítico | 2 | 16 | `buscar`, `editar_archivo`, `ejecutar_pruebas`, `leer_archivo`, `ver_cambios` | 0 | 2 | 4472 | El primer parche no se aplicó. En la segunda ronda se retiró el comentario y pasaron 37 pruebas. |
+
+Los pasos incluyen acciones rechazadas o bloqueadas. El contexto es el máximo observado, no la suma entre agentes ni una medida de tokens. La [observación de E7](agentes/observacion.md) explica cómo reproducir la tabla sin ejecutar las trayectorias de nuevo.
+
+### 4. Artefactos del Laboratorio 10
+
+* [Lienzo de diseño](agentes/diseno/lienzo.md) y [máquina de estados PlantUML](agentes/diseno/estados.puml).
+* Issues del proyecto: [ISSUE-01](issues/ISSUE-01.md), [ISSUE-02](issues/ISSUE-02.md) e [ISSUE-03](issues/ISSUE-03.md).
+* [Mini framework](agentes/agente/), [orquestador](agentes/orquestador.py) y [pruebas deterministas](agentes/pruebas_agente/test_agente.py).
+* [Hoja de ruta de delegación](agentes/delegacion.md), [observación de trazas](agentes/observacion.md) y [bitácora de IA](agentes/bitacora-ia.md).
+* [ADR-010: Sistema agéntico para resolver issues](docs/architecture/adr/010-sistema-agentico.md).
+
+### 5. Cuestionario del Laboratorio 10
+
+1. **¿Qué diferencia a un agente de un flujo fijo? ¿Cuándo elegir un flujo fijo?**
+
+   Un agente selecciona su siguiente acción según las observaciones. Un flujo fijo sigue una secuencia predefinida. Para normalizar productos del catálogo conviene el segundo: la secuencia de generar, validar y aplicar controles no cambia aunque la salida del modelo pueda variar.
+2. **¿Qué dos arquetipos usarías para los tres issues?**
+
+   ReAct para `ISSUE-01` e `ISSUE-03`, porque son diagnósticos locales que alternan inspección y verificación. Para `ISSUE-02`, planificador-ejecutor con un revisor separado, porque además del filtro de stock hay que revisar el comentario sospechoso.
+3. **¿Cómo funciona la máquina de estados y qué evita un bucle indefinido?**
+
+   El agente decide, valida el contrato y evalúa la política. Si corresponde, espera aprobación antes de ejecutar y observar. Una respuesta final válida termina la sesión. La política bloquea acciones si `paso > max_pasos` y el núcleo también acota el número de iteraciones.
+4. **¿Qué es el contrato estructurado y qué ocurre si se incumple?**
+
+   Cada decisión debe incluir `pensamiento` y exactamente una de `accion` o `final`, con los tipos esperados. En el paso 3 de `ISSUE-01`, el texto libre produjo `CONTRATO_INVALIDO` sin ejecutar herramientas; la decisión grabada siguiente usó `buscar` en el formato correcto.
+5. **¿Qué memoria añadió E4 y qué efecto se observó?**
+
+   Añadió una pizarra persistente (`notas.md`) y un mapa del código basado en AST. La ejecución de `ISSUE-03` tuvo 6 pasos frente a 8 de `ISSUE-01`, pero llegó a 6130 caracteres de contexto frente a 5368. Como eran issues y estados iniciales distintos, esos datos no aíslan el efecto de la memoria.
+6. **¿Compensó el costo del actor-crítico según el principio de parsimonia?**
+
+   En la ejecución archivada de `ISSUE-02`, sí: costó 10 pasos y una ronda más, pero retiró el comentario que la variante única dejó intacto. Se reserva esa coordinación para cambios sensibles o con indicios de seguridad.
+7. **¿Qué es el exceso de agencia y cómo se limita?**
+
+   Es dar a un agente más capacidades de las que su tarea necesita. El planificador no usa herramientas, el revisor puede inspeccionar y ejecutar pruebas pero no editar, y el ejecutor está sujeto a restricciones de rutas y comandos y a confirmación de edición. En la primera ronda la política bloqueó el intento de edición del revisor.
+8. **¿En qué rol queda el humano y qué evidencia permitiría avanzar?**
+
+   En **Revisor**: confirma cada edición propuesta por el orquestador y decide sobre el PR. Para pasar a **Colaborador**, la hoja de ruta exige al menos 20 issues consecutivos con `pytest` y `lint-imports` en verde, sin ediciones rechazadas por seguridad ni inyecciones que superen los controles.
+
+### 6. Verificación local de la entrega
+
+```sh
+.venv/bin/python -m pytest -q
+.venv/bin/python -m pytest -q agentes/pruebas_agente
+.venv/bin/lint-imports
+```
+
+Resultado esperado: **37 pruebas del proyecto**, **14 pruebas del agente** y **2 contratos de arquitectura**, todos en verde.
