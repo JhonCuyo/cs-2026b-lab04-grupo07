@@ -36,6 +36,7 @@ class Politica:
     rutas_protegidas: tuple[str, ...] = ("tests/", "agentes/pruebas_agente/")
     max_pasos: int = 12
     aprobar_edicion: Callable[[dict], bool] | None = None
+    requieren_aprobacion: set[str] = field(default_factory=set)
 
     def evaluar(self, accion: str, args: dict, paso: int) -> Decision:
         if paso > self.max_pasos:
@@ -52,6 +53,9 @@ class Politica:
                 return Decision(False, f"Ruta protegida: {ruta}")
             if self.aprobar_edicion and not self.aprobar_edicion(args):
                 return Decision(False, "El revisor humano rechazó la edición")
+        if accion in self.requieren_aprobacion:
+            if self.aprobar_edicion and not self.aprobar_edicion({"ruta": f"MCP:{accion}", "antes": "(ninguno)", "despues": str(args)}):
+                return Decision(False, f"El revisor humano rechazó la herramienta de escritura: {accion}")
         return Decision(True)
 
 
