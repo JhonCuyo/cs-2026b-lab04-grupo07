@@ -15,4 +15,5 @@ venv/
 htmlcov/
 node_modules
 
-.vscode/
+.vscode/*
+!.vscode/mcp.json
