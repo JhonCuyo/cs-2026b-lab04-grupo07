@@ -1,0 +1,31 @@
+[
+  {
+    "pensamiento": "Primero consulto el recurso de estados y reglas de negocio del Mercado San Camilo.",
+    "accion": "leer_recurso",
+    "args": {"uri": "sancamilo://pedidos/estados"}
+  },
+  {
+    "pensamiento": "Busco productos visibles de rocoto en el puesto A-01.",
+    "accion": "buscar_producto",
+    "args": {"termino": "rocoto", "puesto": "A-01"}
+  },
+  {
+    "pensamiento": "Consulto los pedidos del puesto A-01 en estado ENVIADO (provocando error de negocio para validar autocorrección).",
+    "accion": "pedidos_por_puesto",
+    "args": {"puesto": "A-01", "estado": "ENVIADO"}
+  },
+  {
+    "pensamiento": "El servidor devolvió isError=true indicando que los estados válidos incluyen PAGADO. Repito con PAGADO.",
+    "accion": "pedidos_por_puesto",
+    "args": {"puesto": "A-01", "estado": "PAGADO"}
+  },
+  {
+    "pensamiento": "Registro un pedido en borrador para Cliente-05 solicitando 2 kg de Rocoto arequipeño en A-01 (requiere aprobación humana).",
+    "accion": "registrar_pedido_borrador",
+    "args": {"cliente": "Cliente-05", "puesto": "A-01", "producto": "Rocoto arequipeño (kg)", "cantidad": 2}
+  },
+  {
+    "pensamiento": "Todas las consultas y el registro borrador fueron completados con éxito.",
+    "final": "Consulta completada vía MCP: Puesto A-01 tiene Rocoto arequipeño disponible (stock 14, S/ 5.50/kg), 1 pedido PAGADO (total S/ 11.00, comisión S/ 2.50) y se creó el borrador PEDIDO-01.json con aprobación humana."
+  }
+]
